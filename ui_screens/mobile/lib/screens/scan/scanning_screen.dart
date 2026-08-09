@@ -1,16 +1,21 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
+import '../../models/scan_image_args.dart';
 import '../../routes/app_routes.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_exception.dart';
+import '../../services/food_api_service.dart';
+import '../../services/placeholder_image.dart';
 import '../../utils/app_theme.dart';
-import '../../utils/constants.dart';
-import '../../widgets/food_image_placeholder.dart';
 import '../../widgets/ux_states.dart';
 
 enum _ScanPhase { loading, error }
 
 class ScanningScreen extends StatefulWidget {
-  const ScanningScreen({super.key});
+  const ScanningScreen({super.key, this.imageArgs});
+
+  final ScanImageArgs? imageArgs;
 
   @override
   State<ScanningScreen> createState() => _ScanningScreenState();
@@ -18,45 +23,81 @@ class ScanningScreen extends StatefulWidget {
 
 class _ScanningScreenState extends State<ScanningScreen> {
   _ScanPhase _phase = _ScanPhase.loading;
-  String _status = 'Detecting food...';
+  String _status = 'Preparing image…';
+  String _errorMessage =
+      'We could not identify this image. Try again with better lighting.';
 
   @override
   void initState() {
     super.initState();
-    _runSimulation();
+    _runScan();
   }
 
-  Future<void> _runSimulation() async {
+  Future<void> _runScan() async {
     setState(() {
       _phase = _ScanPhase.loading;
-      _status = 'Detecting food...';
+      _status = 'Preparing image…';
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _status = 'Estimating calories...');
-
-    await Future<void>.delayed(AppConstants.scanningDelay);
-    if (!mounted) return;
-
-    if (MockDataService.forceNextScanFailure) {
-      MockDataService.forceNextScanFailure = false;
-      setState(() => _phase = _ScanPhase.error);
+    final args = widget.imageArgs;
+    if (args?.forceFailure == true) {
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
+      setState(() {
+        _phase = _ScanPhase.error;
+        _errorMessage = 'Scan failed. Please try again.';
+      });
       return;
     }
 
-    Navigator.pushReplacementNamed(
-      context,
-      AppRoutes.foodResult,
-      arguments: MockDataService.detectedFood,
-    );
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!mounted) return;
+      setState(() => _status = 'Identifying food…');
+
+      final bytes = args?.bytes.isNotEmpty == true
+          ? args!.bytes
+          : PlaceholderImage.jpegBytes;
+      final filename = args?.filename ?? 'meal.jpg';
+
+      final food = await foodApi.createScan(
+        imageBytes: bytes,
+        filename: filename,
+      );
+      if (!mounted) return;
+
+      setState(() => _status = 'Finalizing…');
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.foodResult,
+        arguments: food,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _ScanPhase.error;
+        _errorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _ScanPhase.error;
+        _errorMessage =
+            'Unable to analyze this photo right now. Please try again.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final preview = widget.imageArgs?.bytes;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scanning'),
+        title: const Text('Analyzing'),
         automaticallyImplyLeading: false,
         actions: [
           if (_phase == _ScanPhase.loading)
@@ -68,31 +109,43 @@ class _ScanningScreenState extends State<ScanningScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: AppSpacing.page,
           child: _phase == _ScanPhase.error
               ? ErrorState(
-                  title: 'Could not detect food',
-                  message:
-                      'We could not identify this image. Try again with better lighting or a clearer photo.',
-                  onRetry: _runSimulation,
+                  title: 'Couldn’t detect food',
+                  message: _errorMessage,
+                  onRetry: _runScan,
                   onSecondary: () => Navigator.pop(context),
                   secondaryLabel: 'Back to camera',
                 )
               : Column(
                   children: [
-                    const FoodImagePlaceholder(
-                      height: 260,
-                      icon: Icons.image_search_rounded,
-                      label: 'Analyzing image',
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadii.xl),
+                      child: SizedBox(
+                        height: 280,
+                        width: double.infinity,
+                        child: preview == null || preview.isEmpty
+                            ? Container(
+                                color: AppColors.surfaceMuted,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.image_search_rounded,
+                                  size: 56,
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : Image.memory(
+                                Uint8List.fromList(preview),
+                                fit: BoxFit.cover,
+                              ),
+                      ),
                     ),
                     const Spacer(),
                     const SizedBox(
-                      width: 42,
-                      height: 42,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3.5,
-                        color: AppColors.primary,
-                      ),
+                      width: 44,
+                      height: 44,
+                      child: CircularProgressIndicator(strokeWidth: 3.5),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -101,16 +154,8 @@ class _ScanningScreenState extends State<ScanningScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'This may take a moment',
+                      'This usually takes a few seconds',
                       style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Tip: open Scan and long-press Scan Food to simulate failure',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: 12,
-                          ),
                     ),
                     const Spacer(),
                   ],

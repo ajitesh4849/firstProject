@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/nutrition_info.dart';
 import '../../routes/app_routes.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_exception.dart';
+import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../widgets/app_card.dart';
@@ -24,27 +25,33 @@ class _NutritionScreenState extends State<NutritionScreen> {
 
   Future<void> _addToToday() async {
     setState(() => _isAdding = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-
-    MockDataService.addMealToToday(
-      name: widget.nutrition.foodName,
-      calories: widget.nutrition.calories,
-    );
-
-    setState(() {
-      _isAdding = false;
-      _added = true;
-    });
-
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.home,
-      (route) => false,
-    );
+    try {
+      await foodApi.addMeal(widget.nutrition);
+      if (!mounted) return;
+      setState(() {
+        _isAdding = false;
+        _added = true;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _isAdding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isAdding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add meal to today')),
+      );
+    }
   }
 
   void _scanAnother() {
@@ -59,12 +66,16 @@ class _NutritionScreenState extends State<NutritionScreen> {
   @override
   Widget build(BuildContext context) {
     final nutrition = widget.nutrition;
+    final protein = nutrition.proteinGrams;
+    final carbs = nutrition.carbsGrams;
+    final fat = nutrition.fatGrams;
+    final total = (protein + carbs + fat).clamp(1, 9999);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrition')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: AppSpacing.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -79,33 +90,56 @@ class _NutritionScreenState extends State<NutritionScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 28),
-              Text(
-                '${nutrition.calories} kcal',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: AppColors.primaryDark,
-                    ),
-              ),
               const SizedBox(height: 24),
               AppCard(
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 child: Column(
                   children: [
-                    _MacroRow(label: 'Protein', value: '${nutrition.proteinGrams}g'),
-                    const Divider(height: 24, color: AppColors.border),
-                    _MacroRow(label: 'Carbs', value: '${nutrition.carbsGrams}g'),
-                    const Divider(height: 24, color: AppColors.border),
-                    _MacroRow(label: 'Fat', value: '${nutrition.fatGrams}g'),
+                    Text(
+                      '${nutrition.calories}',
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: AppColors.primaryDark,
+                          ),
+                    ),
+                    Text(
+                      'kcal estimated',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  children: [
+                    _MacroMeter(
+                      label: 'Protein',
+                      valueLabel: '${protein}g',
+                      ratio: protein / total,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    _MacroMeter(
+                      label: 'Carbs',
+                      valueLabel: '${carbs}g',
+                      ratio: carbs / total,
+                      color: AppColors.accent,
+                    ),
+                    const SizedBox(height: 16),
+                    _MacroMeter(
+                      label: 'Fat',
+                      valueLabel: '${fat}g',
+                      ratio: fat / total,
+                      color: const Color(0xFF5B8DEF),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               Text(
                 AppConstants.nutritionDisclaimer,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               if (_added) ...[
                 const SizedBox(height: 16),
@@ -120,7 +154,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
               ),
               const SizedBox(height: 12),
               SecondaryButton(
-                label: 'Scan Another',
+                label: 'Scan another',
                 icon: Icons.camera_alt_outlined,
                 onPressed: _isAdding || _added ? null : _scanAnother,
               ),
@@ -132,24 +166,45 @@ class _NutritionScreenState extends State<NutritionScreen> {
   }
 }
 
-class _MacroRow extends StatelessWidget {
-  const _MacroRow({required this.label, required this.value});
+class _MacroMeter extends StatelessWidget {
+  const _MacroMeter({
+    required this.label,
+    required this.valueLabel,
+    required this.ratio,
+    required this.color,
+  });
 
   final String label;
-  final String value;
+  final String valueLabel;
+  final double ratio;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: Text(label, style: Theme.of(context).textTheme.titleMedium),
+        Row(
+          children: [
+            Expanded(
+              child: Text(label, style: Theme.of(context).textTheme.titleMedium),
+            ),
+            Text(
+              valueLabel,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primaryDark,
+                  ),
+            ),
+          ],
         ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.primaryDark,
-              ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.full),
+          child: LinearProgressIndicator(
+            value: ratio.clamp(0.0, 1.0),
+            minHeight: 8,
+            backgroundColor: AppColors.border,
+            color: color,
+          ),
         ),
       ],
     );

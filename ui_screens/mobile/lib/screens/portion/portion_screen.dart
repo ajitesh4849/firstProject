@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../models/food_item.dart';
 import '../../routes/app_routes.dart';
+import '../../services/api_exception.dart';
+import '../../services/food_api_service.dart';
 import '../../services/mock_data.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_card.dart';
@@ -21,6 +23,7 @@ class _PortionScreenState extends State<PortionScreen> {
   int _selectedIndex = 1;
   final _customController = TextEditingController();
   bool _useCustom = false;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -37,7 +40,8 @@ class _PortionScreenState extends State<PortionScreen> {
     return MockDataService.portionOptions[_selectedIndex].grams;
   }
 
-  void _continue() {
+  Future<void> _continue() async {
+    FocusScope.of(context).unfocus();
     final grams = _portionGrams;
     if (grams == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,119 +50,144 @@ class _PortionScreenState extends State<PortionScreen> {
       return;
     }
 
-    final nutrition = MockDataService.nutritionFor(
-      foodName: widget.food.name,
-      portionGrams: grams,
-    );
+    setState(() => _loading = true);
+    try {
+      final scanId = widget.food.scanId;
+      final nutrition = (scanId == null || scanId.isEmpty)
+          ? MockDataService.nutritionFor(
+              foodName: widget.food.name,
+              portionGrams: grams,
+            )
+          : await foodApi.fetchNutrition(scanId: scanId, portionGrams: grams);
 
-    Navigator.pushNamed(
-      context,
-      AppRoutes.nutrition,
-      arguments: nutrition,
-    );
+      if (!mounted) return;
+      Navigator.pushNamed(
+        context,
+        AppRoutes.nutrition,
+        arguments: nutrition,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not estimate nutrition')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Select Portion')),
+      appBar: AppBar(title: const Text('Portion')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: AppSpacing.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                widget.food.name,
-                style: Theme.of(context).textTheme.titleLarge,
+              SectionHeader(
+                title: widget.food.name,
+                subtitle: 'Choose a portion size for estimation',
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Choose a portion size for estimation',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 20),
-              ...List.generate(MockDataService.portionOptions.length, (index) {
-                final option = MockDataService.portionOptions[index];
-                final selected = !_useCustom && _selectedIndex == index;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: AppCard(
-                    onTap: () {
-                      setState(() {
-                        _useCustom = false;
-                        _selectedIndex = index;
-                      });
-                    },
-                    child: Row(
-                      children: [
-                        Icon(
-                          selected
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_off,
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            option.label,
-                            style: Theme.of(context).textTheme.titleMedium,
+              const SizedBox(height: 18),
+              Expanded(
+                child: ListView(
+                  children: [
+                    ...List.generate(MockDataService.portionOptions.length, (index) {
+                      final option = MockDataService.portionOptions[index];
+                      final selected = !_useCustom && _selectedIndex == index;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: AppCard(
+                          onTap: _loading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _useCustom = false;
+                                    _selectedIndex = index;
+                                  });
+                                },
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  option.label,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              Text(
+                                '${option.grams}g',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(color: AppColors.primaryDark),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '${option.grams}g',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: AppColors.primaryDark,
+                      );
+                    }),
+                    AppCard(
+                      onTap:
+                          _loading ? null : () => setState(() => _useCustom = true),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _useCustom
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: _useCustom
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
                               ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 8),
-              AppCard(
-                onTap: () => setState(() => _useCustom = true),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _useCustom
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_off,
-                          color: _useCustom
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Custom grams',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _customController,
-                      enabled: _useCustom,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 250',
-                        suffixText: 'g',
+                              const SizedBox(width: 12),
+                              Text(
+                                'Custom grams',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _customController,
+                            enabled: _useCustom && !_loading,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            decoration: const InputDecoration(
+                              hintText: 'e.g. 250',
+                              suffixText: 'g',
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ],
                       ),
-                      onChanged: (_) => setState(() {}),
                     ),
                   ],
                 ),
               ),
-              const Spacer(),
               PrimaryButton(
                 label: 'Continue',
+                isLoading: _loading,
                 onPressed: _continue,
               ),
             ],

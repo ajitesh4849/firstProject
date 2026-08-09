@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../utils/app_theme.dart';
 
@@ -24,10 +25,7 @@ class PrimaryButton extends StatelessWidget {
         ? const SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              color: Colors.white,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
           )
         : icon == null
             ? Text(label)
@@ -42,17 +40,12 @@ class PrimaryButton extends StatelessWidget {
               );
 
     final button = FilledButton(
-      onPressed: isLoading ? null : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.55),
-        disabledForegroundColor: Colors.white,
-        minimumSize: const Size(48, 52),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
+      onPressed: isLoading || onPressed == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onPressed!();
+            },
       child: child,
     );
 
@@ -83,10 +76,7 @@ class SecondaryButton extends StatelessWidget {
         ? const SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              color: AppColors.primary,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.primary),
           )
         : icon == null
             ? Text(label)
@@ -101,15 +91,12 @@ class SecondaryButton extends StatelessWidget {
               );
 
     final button = OutlinedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primaryDark,
-        side: const BorderSide(color: AppColors.border, width: 1.4),
-        minimumSize: const Size(48, 52),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
+      onPressed: isLoading || onPressed == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              onPressed!();
+            },
       child: child,
     );
 

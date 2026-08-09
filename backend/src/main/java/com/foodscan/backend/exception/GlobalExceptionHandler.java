@@ -31,8 +31,17 @@ public class GlobalExceptionHandler {
         Map<String, String> details = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> details.put(error.getField(), error.getDefaultMessage()));
+        String message = details.values().stream().findFirst().orElse("Request validation failed");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiErrorResponse("VALIDATION_ERROR", "Request validation failed", details));
+                .body(new ApiErrorResponse("VALIDATION_ERROR", message, details));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorResponse("BAD_REQUEST", "Email is already registered", null));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -43,6 +52,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex) {
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Unhandled server error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiErrorResponse("INTERNAL_ERROR", "Unexpected server error", null));
     }

@@ -1,6 +1,18 @@
 spring:
   application:
     name: foodscan-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/foodscan}
+    username: ${SPRING_DATASOURCE_USERNAME:foodscan}
+    password: ${SPRING_DATASOURCE_PASSWORD:foodscan}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
 
 server:
   port: ${SERVER_PORT:8080}
@@ -17,10 +29,16 @@ management:
 foodscan:
   ai:
     base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
-    connect-timeout-ms: ${AI_CONNECT_TIMEOUT_MS:3000}
-    read-timeout-ms: ${AI_READ_TIMEOUT_MS:20000}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  jwt:
+    secret: ${JWT_SECRET:foodscan-dev-secret-change-me-please-32chars-min}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    allow-weak-secret: ${JWT_ALLOW_WEAK_SECRET:true}
+  rate-limit:
+    auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:20}
+    scan-per-minute: ${RATE_LIMIT_SCAN_PER_MINUTE:30}
+    window-ms: ${RATE_LIMIT_WINDOW_MS:60000}
 
 logging:
   level:

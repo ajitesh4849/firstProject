@@ -6,6 +6,21 @@ These are initial contracts for integration after UI is complete.
 
 The Next.js marketing website should **not** call scan, meal, today, history, or profile APIs in MVP. It may later call a contact (or similar) endpoint if added.
 
+## POST /api/v1/auth/signup
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "********"
+}
+```
+
+Response: same shape as login (`accessToken` + `user`). Password min length: 6.
+
+Protected routes require `Authorization: Bearer <accessToken>`.
+
 ## POST /api/v1/auth/login
 
 Request:

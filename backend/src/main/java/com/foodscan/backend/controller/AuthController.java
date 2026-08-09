@@ -2,6 +2,7 @@ package com.foodscan.backend.controller;
 
 import com.foodscan.backend.dto.LoginRequest;
 import com.foodscan.backend.dto.LoginResponse;
+import com.foodscan.backend.dto.SignupRequest;
 import com.foodscan.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,11 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<LoginResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return ResponseEntity.ok(authService.signup(request));
     }
 
     @PostMapping("/login")

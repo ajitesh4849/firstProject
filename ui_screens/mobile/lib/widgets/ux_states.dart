@@ -22,11 +22,19 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 12),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: AppColors.primary.withValues(alpha: 0.7)),
-          const SizedBox(height: 14),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
+            child: Icon(icon, size: 34, color: AppColors.primary),
+          ),
+          const SizedBox(height: 18),
           Text(
             title,
             textAlign: TextAlign.center,
@@ -39,7 +47,7 @@ class EmptyState extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             PrimaryButton(
               label: actionLabel!,
               onPressed: onAction,
@@ -73,12 +81,20 @@ class ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.danger),
-          const SizedBox(height: 16),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.dangerSoft,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
+            child: const Icon(Icons.error_outline_rounded, size: 34, color: AppColors.danger),
+          ),
+          const SizedBox(height: 18),
           Text(
             title,
             textAlign: TextAlign.center,
@@ -115,13 +131,13 @@ class SuccessBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+          const Icon(Icons.check_circle_rounded, color: AppColors.success),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -132,6 +148,30 @@ class SuccessBanner extends StatelessWidget {
                   ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class LoadingView extends StatelessWidget {
+  const LoadingView({super.key, this.label = 'Loading…'});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 36,
+            height: 36,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          const SizedBox(height: 14),
+          Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

@@ -9,7 +9,7 @@ export function Hero() {
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 70% 20%, rgba(232,163,23,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 15% 80%, rgba(27,122,78,0.55), transparent 50%), linear-gradient(160deg, #0d3d28 0%, #145c3a 45%, #0f2f20 100%)",
+            "radial-gradient(ellipse 80% 60% at 70% 20%, rgba(201,120,22,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 15% 80%, rgba(15,118,110,0.55), transparent 50%), linear-gradient(160deg, #062e2b 0%, #0b5c56 45%, #041f1d 100%)",
         }}
       />
       <div

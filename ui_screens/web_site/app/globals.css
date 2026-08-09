@@ -1,28 +1,37 @@
 @import "tailwindcss";
 
+/* Synced with Flutter enterprise tokens (ui_screens/mobile/lib/utils/app_theme.dart) */
 :root {
-  --background: #f4f7f3;
-  --foreground: #1a1f1c;
-  --muted: #5c6b62;
-  --primary: #1b7a4e;
-  --primary-dark: #0f5a38;
-  --accent: #e8a317;
+  --background: #f3f6f4;
+  --foreground: #15201b;
+  --muted: #5b6a63;
+  --muted-soft: #8a9790;
+  --primary: #0f766e;
+  --primary-dark: #0b5c56;
+  --primary-soft: #e6f4f2;
+  --accent: #c97816;
   --surface: #ffffff;
-  --border: #d7e0d9;
-  --hero-deep: #0d3d28;
+  --surface-muted: #eef2ef;
+  --border: #d8e2dc;
+  --danger: #b42318;
+  --hero-deep: #062e2b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
+  --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
+  --color-danger: var(--danger);
   --color-hero-deep: var(--hero-deep);
-  --font-sans: var(--font-outfit);
+  --font-sans: var(--font-plus-jakarta);
   --font-display: var(--font-fraunces);
 }
 
@@ -37,7 +46,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 @keyframes fade-up {

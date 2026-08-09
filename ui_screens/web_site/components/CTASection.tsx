@@ -12,7 +12,7 @@ export function CTASection({
   return (
     <section
       id="try"
-      className="border-y border-border bg-[linear-gradient(135deg,#e8f3ec_0%,#f4f7f3_50%,#f7efd9_100%)] py-20"
+      className="border-y border-border bg-[linear-gradient(135deg,#e6f4f2_0%,#f3f6f4_50%,#f7edd9_100%)] py-20"
       aria-labelledby="cta-heading"
     >
       <div className="mx-auto max-w-6xl px-5 text-center md:px-8">

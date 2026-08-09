@@ -36,18 +36,37 @@ pytest -q
 
 | Variable | Default | Notes |
 |---|---|---|
-| `AI_MODEL_PROVIDER` | `mock` | `mock` now; `openai` reserved |
-| `OPENAI_API_KEY` | unset | Required only for openai provider later |
+| `AI_MODEL_PROVIDER` | `mock` | `mock` or `openai` |
+| `OPENAI_API_KEY` | unset | Required when provider is `openai` |
+| `OPENAI_VISION_MODEL` | `gpt-4o-mini` | Vision-capable chat model |
 | `AI_SERVICE_PORT` | `8000` | Used by docs/ops; uvicorn port flag wins locally |
+
+## Enable real image analysis (OpenAI Vision)
+
+1. Put your key in repo-root `.env` (or `ai_service/.env` for local uvicorn):
+
+```env
+AI_MODEL_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+OPENAI_VISION_MODEL=gpt-4o-mini
+```
+
+2. Restart AI:
+
+```powershell
+docker compose up -d --build ai_service
+```
+
+Health should show `"provider":"openai"`.
 
 ## Adapter design
 
 ```text
 /predict → FoodRecognitionAdapter → MockFoodRecognitionAdapter (default)
-                                  → OpenAIVisionAdapter (placeholder)
+                                  → OpenAIVisionAdapter
 ```
 
-Swap providers without changing the response contract:
+Response contract stays:
 
 ```json
 { "foodName": "Paneer Butter Masala", "confidence": 0.92 }

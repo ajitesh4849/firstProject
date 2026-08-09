@@ -4,6 +4,7 @@ import '../../models/food_item.dart';
 import '../../routes/app_routes.dart';
 import '../../services/mock_data.dart';
 import '../../utils/app_theme.dart';
+import '../../widgets/app_card.dart';
 import '../../widgets/food_image_placeholder.dart';
 import '../../widgets/primary_button.dart';
 
@@ -31,7 +32,7 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Food Name'),
+          title: const Text('Edit food name'),
           content: TextField(
             controller: controller,
             autofocus: true,
@@ -66,12 +67,17 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
   @override
   Widget build(BuildContext context) {
     final confidencePct = (_food.confidence * 100).round();
+    final tone = confidencePct >= 80
+        ? StatusChipTone.success
+        : confidencePct >= 55
+            ? StatusChipTone.warning
+            : StatusChipTone.danger;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Food Result')),
+      appBar: AppBar(title: const Text('Detection')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: AppSpacing.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -80,29 +86,32 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
                 label: 'Detected dish',
               ),
               const SizedBox(height: 24),
-              Text(
-                _food.name,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 10),
-              Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Confidence: $confidencePct%',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.primaryDark,
-                      ),
+              AppCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      _food.name,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 14),
+                    StatusChip(
+                      label: 'Confidence $confidencePct%',
+                      tone: tone,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Confirm the dish before estimating nutrition.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
               PrimaryButton(
-                label: 'Looks Correct',
+                label: 'Looks correct',
                 onPressed: () {
                   Navigator.pushNamed(
                     context,
@@ -113,7 +122,7 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
               ),
               const SizedBox(height: 12),
               SecondaryButton(
-                label: 'Edit Food Name',
+                label: 'Edit food name',
                 icon: Icons.edit_outlined,
                 onPressed: _editFoodName,
               ),

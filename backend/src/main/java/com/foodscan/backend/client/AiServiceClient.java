@@ -4,12 +4,15 @@ import com.foodscan.backend.dto.AiPredictResponse;
 import com.foodscan.backend.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -17,20 +20,18 @@ import java.io.IOException;
 @Component
 public class AiServiceClient {
 
-    private final RestClient restClient;
+    private final RestTemplate restTemplate;
+    private final String predictUrl;
 
-    public AiServiceClient(
-            RestClient.Builder restClientBuilder,
-            @Value("${foodscan.ai.base-url}") String baseUrl
-    ) {
-        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
+    public AiServiceClient(@Value("${foodscan.ai.base-url}") String baseUrl) {
+        this.restTemplate = new RestTemplate();
+        this.predictUrl = baseUrl.endsWith("/") ? baseUrl + "predict" : baseUrl + "/predict";
     }
 
     public AiPredictResponse predict(MultipartFile image) {
         try {
             byte[] bytes = image.getBytes();
             String filename = image.getOriginalFilename() == null ? "food.jpg" : image.getOriginalFilename();
-            String contentType = image.getContentType() == null ? MediaType.IMAGE_JPEG_VALUE : image.getContentType();
 
             ByteArrayResource resource = new ByteArrayResource(bytes) {
                 @Override
@@ -39,18 +40,28 @@ public class AiServiceClient {
                 }
             };
 
-            MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
-            bodyBuilder.part("image", resource).contentType(MediaType.parseMediaType(contentType));
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("image", resource);
 
-            return restClient.post()
-                    .uri("/predict")
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(bodyBuilder.build())
-                    .retrieve()
-                    .body(AiPredictResponse.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            ResponseEntity<AiPredictResponse> response = restTemplate.postForEntity(
+                    predictUrl,
+                    new HttpEntity<>(body, headers),
+                    AiPredictResponse.class
+            );
+
+            AiPredictResponse prediction = response.getBody();
+            if (prediction == null || prediction.foodName() == null || prediction.foodName().isBlank()) {
+                throw new BadRequestException("AI service returned an empty prediction");
+            }
+            return prediction;
         } catch (RestClientResponseException ex) {
             throw new BadRequestException("AI service rejected image: " + ex.getResponseBodyAsString());
-        } catch (RestClientException | IOException ex) {
+        } catch (BadRequestException ex) {
+            throw ex;
+        } catch (IOException | RuntimeException ex) {
             throw new BadRequestException("AI service unavailable: " + ex.getMessage());
         }
     }

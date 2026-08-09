@@ -18,12 +18,12 @@ export function Navbar() {
         Skip to content
       </a>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-8">
-        <Link
-          href="/"
-          className="font-display text-2xl font-semibold tracking-tight text-primary-dark"
-        >
-          {siteConfig.name}
-        </Link>
+          <Link
+            href="/"
+            className="text-2xl font-bold tracking-tight text-primary-dark"
+          >
+            {siteConfig.name}
+          </Link>
 
         <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
           {navLinks.map((link) => {

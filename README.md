@@ -11,75 +11,95 @@ Source of truth: `docs/` (synced from `foodscan_cursor_docs`).
 ## Architecture
 
 ```text
-Flutter Mobile → Spring Boot Backend → AI Service
-Next.js Website → Spring Boot Backend (only when backend functionality is required)
+Flutter Mobile → Spring Boot Backend → AI Service + PostgreSQL
+Next.js Website (Docker service, marketing only)
 ```
 
 ```text
 foodscan/
 ├── ui_screens/
-│   ├── mobile/       # Flutter Android/iOS (Phase 1 – UI ✓)
-│   └── web_site/     # Next.js marketing site (Phase 2)
-├── backend/          # Spring Boot REST API (Phase 4)
-├── ai_service/       # Python FastAPI (Phase 5)
+│   ├── mobile/       # Flutter Android/iOS
+│   └── web_site/     # Next.js marketing site (Compose: website)
+├── backend/          # Spring Boot + Maven + PostgreSQL + JWT
+├── ai_service/       # Python FastAPI
+├── docker-compose.yml
 ├── docs/
 └── README.md
 ```
 
 ## Current status
 
-**Phase 1 – Mobile UI** ✓ — Flutter app with mock data  
-**Phase 2 – Marketing website** ✓ — Next.js public site  
-**Phase 3 – UX polish** ✓ — loading / empty / error / success states  
-**Phase 4 – Backend (started)** ✓ — Spring Boot + **Maven**, in-memory API stubs
+| Area | Status |
+|---|---|
+| Flutter UI + camera/gallery scan | Done |
+| Marketing site | Done |
+| Spring Boot REST + JWT signup/login | Done |
+| PostgreSQL persistence (users, meals, scans) | Done |
+| FastAPI AI (mock adapter) | Done |
+| Docker Compose (Postgres + AI + backend + website) | Done |
 
-## Run the Flutter app
+## Quick start with Docker
 
-```bash
+```powershell
+docker compose up --build
+```
+
+- Marketing site: http://localhost:3000  
+- API health: http://localhost:8080/api/v1/health  
+- AI health: http://localhost:8000/health  
+- Postgres: `localhost:5432` (`foodscan` / `foodscan` / `foodscan`)
+
+Then run Flutter:
+
+```powershell
 cd ui_screens/mobile
 flutter pub get
-flutter run
+flutter run -d emulator-5554
 ```
 
-### Demo flow
+Create an account from the login screen (signup), then scan with Camera or Gallery.
 
-Splash → Login → Home → Scan → Scanning → Food Result → Portion → Nutrition → Home  
-Bottom nav: Home ↔ History ↔ Profile
+Android emulator API base URL is `http://10.0.2.2:8080`.
 
-UX tips:
-- Login password `fail` → error state
-- Long-press **Scan Food** → simulated detection failure + retry
+## Local run without Docker
 
-## Run the marketing website
+1. Start Postgres (or use Compose only for Postgres: `docker compose up postgres -d`).
+2. AI service:
 
-```bash
-cd ui_screens/web_site
-npm install
-npm run dev
+```powershell
+cd ai_service
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open http://localhost:3000
-
-Contact tip: email `fail@example.com` → submit error state
-
-## Run the backend (Maven)
+3. Backend:
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Health: http://localhost:8080/api/v1/health
+Defaults expect Postgres at `jdbc:postgresql://localhost:5432/foodscan` with user/password `foodscan`.
+
+## Website (optional)
 
 ```powershell
-.\mvnw.cmd test
+cd ui_screens/web_site
+npm install
+npm run dev
 ```
 
 ## Docs
 
 See `docs/` for product requirements, architecture, Flutter spec, website spec, API contracts, and Cursor build instructions.
 
-## Next phases
+## Still remaining
 
-5. FastAPI AI service (wire backend scan → `/predict`)  
-Also: real JWT, PostgreSQL persistence  
+1. Add OpenAI key later (`AI_MODEL_PROVIDER=openai`) for real photo analysis
+2. iPhone device QA on MacBook
+3. Cloud hosting beyond local Docker
+4. Optional: richer nutrition database
+
+See `docs/DEPLOY.md` for running the hardened Compose stack.

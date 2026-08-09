@@ -12,6 +12,7 @@ import '../screens/scan/scanning_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../models/food_item.dart';
 import '../models/nutrition_info.dart';
+import '../models/scan_image_args.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -36,7 +37,8 @@ class AppRoutes {
       case scan:
         return _slide(const ScanScreen(), settings);
       case scanning:
-        return _fade(const ScanningScreen(), settings);
+        final imageArgs = settings.arguments as ScanImageArgs?;
+        return _fade(ScanningScreen(imageArgs: imageArgs), settings);
       case foodResult:
         final food = settings.arguments as FoodItem?;
         return _slide(FoodResultScreen(food: food), settings);
