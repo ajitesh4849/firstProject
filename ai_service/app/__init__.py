@@ -1,0 +1,1 @@
+"""FoodScan AI service package."""

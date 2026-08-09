@@ -1,0 +1,11 @@
+from abc import ABC, abstractmethod
+
+from app.schemas import PredictResponse
+
+
+class FoodRecognitionAdapter(ABC):
+    """Swap implementations without changing the /predict API contract."""
+
+    @abstractmethod
+    async def predict(self, image_bytes: bytes, content_type: str, filename: str | None) -> PredictResponse:
+        raise NotImplementedError

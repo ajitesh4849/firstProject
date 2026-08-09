@@ -1,0 +1,58 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+.idea/
+.vscode/
+*.lock
+
+# Flutter
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugins-dependencies
+**/android/.gradle/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.*
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+**/secrets/
+**/credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (Phase 2)
+node_modules/
+.next/
+out/
+dist/
+
+# Java (Phase 4)
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!**/gradle-wrapper.jar
+!**/maven-wrapper.jar
+
+# Python (Phase 5)
+ai_service/.venv/
+ai_service/venv/
+__pycache__/
+*.pyc
+.pytest_cache/
