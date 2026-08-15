@@ -1,5 +1,6 @@
 package com.foodscan.backend.service;
 
+import com.foodscan.backend.awareness.IngredientAwarenessService;
 import com.foodscan.backend.client.AiServiceClient;
 import com.foodscan.backend.dto.AiPredictResponse;
 import com.foodscan.backend.dto.ScanResponse;
@@ -41,7 +42,8 @@ class ScanServiceTest {
                 aiServiceClient,
                 foodScanRepository,
                 currentUserService,
-                new NutritionEstimator()
+                new NutritionEstimator(),
+                new IngredientAwarenessService()
         );
     }
 
@@ -68,5 +70,7 @@ class ScanServiceTest {
         assertNotNull(response.scanId());
         assertEquals("Masala Dosa", response.food().name());
         assertEquals(0.91, response.food().confidence());
+        assertNotNull(response.food().awareness());
+        assertNotNull(response.food().awareness().category());
     }
 }

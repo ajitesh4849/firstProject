@@ -1,5 +1,6 @@
 package com.foodscan.backend.service;
 
+import com.foodscan.backend.awareness.IngredientAwarenessService;
 import com.foodscan.backend.client.AiServiceClient;
 import com.foodscan.backend.dto.AiPredictResponse;
 import com.foodscan.backend.dto.FoodDto;
@@ -26,17 +27,20 @@ public class ScanService {
     private final FoodScanRepository foodScanRepository;
     private final CurrentUserService currentUserService;
     private final NutritionEstimator nutritionEstimator;
+    private final IngredientAwarenessService ingredientAwarenessService;
 
     public ScanService(
             AiServiceClient aiServiceClient,
             FoodScanRepository foodScanRepository,
             CurrentUserService currentUserService,
-            NutritionEstimator nutritionEstimator
+            NutritionEstimator nutritionEstimator,
+            IngredientAwarenessService ingredientAwarenessService
     ) {
         this.aiServiceClient = aiServiceClient;
         this.foodScanRepository = foodScanRepository;
         this.currentUserService = currentUserService;
         this.nutritionEstimator = nutritionEstimator;
+        this.ingredientAwarenessService = ingredientAwarenessService;
     }
 
     @Transactional
@@ -64,7 +68,11 @@ public class ScanService {
 
         return new ScanResponse(
                 scan.getId(),
-                new FoodDto(scan.getFoodName(), scan.getConfidence())
+                new FoodDto(
+                        scan.getFoodName(),
+                        scan.getConfidence(),
+                        ingredientAwarenessService.forFoodName(scan.getFoodName())
+                )
         );
     }
 

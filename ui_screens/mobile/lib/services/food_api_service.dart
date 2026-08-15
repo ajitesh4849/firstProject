@@ -1,5 +1,6 @@
 import '../models/daily_summary.dart';
 import '../models/food_item.dart';
+import '../models/ingredient_awareness.dart';
 import '../models/meal.dart';
 import '../models/nutrition_info.dart';
 import '../models/user_profile.dart';
@@ -54,10 +55,14 @@ class FoodApiService {
     );
 
     final food = body['food'] as Map<String, dynamic>? ?? {};
+    final awarenessJson = food['awareness'] as Map<String, dynamic>?;
     return FoodItem(
       name: food['name']?.toString() ?? 'Unknown food',
       confidence: (food['confidence'] as num?)?.toDouble() ?? 0,
       scanId: body['scanId']?.toString(),
+      awareness: awarenessJson == null
+          ? null
+          : IngredientAwareness.fromJson(awarenessJson),
     );
   }
 
