@@ -74,92 +74,107 @@ class _NutritionScreenState extends State<NutritionScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrition')),
       body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.page,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                nutrition.foodName,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${nutrition.portionGrams}g portion',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 24),
-              AppCard(
-                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                child: Column(
-                  children: [
-                    Text(
-                      '${nutrition.calories}',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            color: AppColors.primaryDark,
-                          ),
-                    ),
-                    Text(
-                      'kcal estimated',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: AppSpacing.page,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        nutrition.foodName,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${nutrition.portionGrams}g portion',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      AppCard(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 28,
+                          horizontal: 20,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${nutrition.calories}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineLarge
+                                  ?.copyWith(color: AppColors.primaryDark),
+                            ),
+                            Text(
+                              'kcal estimated',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      AppCard(
+                        child: Column(
+                          children: [
+                            _MacroMeter(
+                              label: 'Protein',
+                              valueLabel: '${protein}g',
+                              ratio: protein / total,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(height: 16),
+                            _MacroMeter(
+                              label: 'Carbs',
+                              valueLabel: '${carbs}g',
+                              ratio: carbs / total,
+                              color: AppColors.accent,
+                            ),
+                            const SizedBox(height: 16),
+                            _MacroMeter(
+                              label: 'Fat',
+                              valueLabel: '${fat}g',
+                              ratio: fat / total,
+                              color: const Color(0xFF5B8DEF),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        AppConstants.nutritionDisclaimer,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (_added) ...[
+                        const SizedBox(height: 16),
+                        const SuccessBanner(
+                          message: 'Added to today. Returning home…',
+                        ),
+                      ],
+                      const Spacer(),
+                      PrimaryButton(
+                        label: 'Add to Today',
+                        icon: Icons.check_circle_outline,
+                        isLoading: _isAdding,
+                        onPressed: _added ? null : _addToToday,
+                      ),
+                      const SizedBox(height: 12),
+                      SecondaryButton(
+                        label: 'Scan another',
+                        icon: Icons.camera_alt_outlined,
+                        onPressed: _isAdding || _added ? null : _scanAnother,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              AppCard(
-                child: Column(
-                  children: [
-                    _MacroMeter(
-                      label: 'Protein',
-                      valueLabel: '${protein}g',
-                      ratio: protein / total,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    _MacroMeter(
-                      label: 'Carbs',
-                      valueLabel: '${carbs}g',
-                      ratio: carbs / total,
-                      color: AppColors.accent,
-                    ),
-                    const SizedBox(height: 16),
-                    _MacroMeter(
-                      label: 'Fat',
-                      valueLabel: '${fat}g',
-                      ratio: fat / total,
-                      color: const Color(0xFF5B8DEF),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                AppConstants.nutritionDisclaimer,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (_added) ...[
-                const SizedBox(height: 16),
-                const SuccessBanner(message: 'Added to today. Returning home…'),
-              ],
-              const Spacer(),
-              PrimaryButton(
-                label: 'Add to Today',
-                icon: Icons.check_circle_outline,
-                isLoading: _isAdding,
-                onPressed: _added ? null : _addToToday,
-              ),
-              const SizedBox(height: 12),
-              SecondaryButton(
-                label: 'Scan another',
-                icon: Icons.camera_alt_outlined,
-                onPressed: _isAdding || _added ? null : _scanAnother,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

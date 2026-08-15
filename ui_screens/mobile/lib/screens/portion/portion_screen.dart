@@ -86,111 +86,129 @@ class _PortionScreenState extends State<PortionScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Portion')),
       body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.page,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SectionHeader(
-                title: widget.food.name,
-                subtitle: 'Choose a portion size for estimation',
-              ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: ListView(
-                  children: [
-                    ...List.generate(MockDataService.portionOptions.length, (index) {
-                      final option = MockDataService.portionOptions[index];
-                      final selected = !_useCustom && _selectedIndex == index;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: AppCard(
-                          onTap: _loading
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _useCustom = false;
-                                    _selectedIndex = index;
-                                  });
-                                },
-                          child: Row(
-                            children: [
-                              Icon(
-                                selected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_off,
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  option.label,
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                ),
-                              ),
-                              Text(
-                                '${option.grams}g',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(color: AppColors.primaryDark),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                    AppCard(
-                      onTap:
-                          _loading ? null : () => setState(() => _useCustom = true),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                _useCustom
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_off,
-                                color: _useCustom
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Custom grams',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _customController,
-                            enabled: _useCustom && !_loading,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. 250',
-                              suffixText: 'g',
-                            ),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Padding(
+            padding: AppSpacing.page,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SectionHeader(
+                  title: widget.food.name,
+                  subtitle: 'Choose a portion size for estimation',
                 ),
-              ),
-              PrimaryButton(
-                label: 'Continue',
-                isLoading: _loading,
-                onPressed: _continue,
-              ),
-            ],
+                const SizedBox(height: 18),
+                Expanded(
+                  child: ListView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    children: [
+                      ...List.generate(MockDataService.portionOptions.length,
+                          (index) {
+                        final option = MockDataService.portionOptions[index];
+                        final selected = !_useCustom && _selectedIndex == index;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: AppCard(
+                            onTap: _loading
+                                ? null
+                                : () {
+                                    FocusScope.of(context).unfocus();
+                                    setState(() {
+                                      _useCustom = false;
+                                      _selectedIndex = index;
+                                    });
+                                  },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  selected
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_off,
+                                  color: selected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    option.label,
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ),
+                                Text(
+                                  '${option.grams}g',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(color: AppColors.primaryDark),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      AppCard(
+                        onTap: _loading
+                            ? null
+                            : () => setState(() => _useCustom = true),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _useCustom
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_off,
+                                  color: _useCustom
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Custom grams',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _customController,
+                              enabled: _useCustom && !_loading,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _continue(),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              decoration: const InputDecoration(
+                                hintText: 'e.g. 250',
+                                suffixText: 'g',
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Keep the custom field above the keyboard when focused.
+                      SizedBox(
+                        height: MediaQuery.viewInsetsOf(context).bottom > 0
+                            ? 24
+                            : 0,
+                      ),
+                    ],
+                  ),
+                ),
+                PrimaryButton(
+                  label: 'Continue',
+                  isLoading: _loading,
+                  onPressed: _continue,
+                ),
+              ],
+            ),
           ),
         ),
       ),

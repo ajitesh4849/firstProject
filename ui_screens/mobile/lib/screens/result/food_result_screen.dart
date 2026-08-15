@@ -27,10 +27,11 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
   }
 
   Future<void> _editFoodName() async {
-    final result = await showDialog<String>(
+    final result = await showModalBottomSheet<String>(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => _EditFoodNameDialog(initialName: _food.name),
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _EditFoodNameSheet(initialName: _food.name),
     );
 
     if (result == null) return;
@@ -53,88 +54,78 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
             ? StatusChipTone.warning
             : StatusChipTone.danger;
 
-    // Keep scaffold from shrinking under the keyboard while the edit dialog is open.
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Detection')),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: AppSpacing.page,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const FoodImagePlaceholder(
-                        height: 240,
-                        label: 'Detected dish',
-                      ),
-                      const SizedBox(height: 24),
-                      AppCard(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            Text(
-                              _food.name,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 14),
-                            StatusChip(
-                              label: 'Confidence $confidencePct%',
-                              tone: tone,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Confirm the dish before estimating nutrition.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      PrimaryButton(
-                        label: 'Looks correct',
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.portion,
-                            arguments: _food,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      SecondaryButton(
-                        label: 'Edit food name',
-                        icon: Icons.edit_outlined,
-                        onPressed: _editFoodName,
-                      ),
-                    ],
-                  ),
+        child: Padding(
+          padding: AppSpacing.page,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const FoodImagePlaceholder(
+                height: 200,
+                label: 'Detected dish',
+              ),
+              const SizedBox(height: 20),
+              AppCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      _food.name,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 14),
+                    StatusChip(
+                      label: 'Confidence $confidencePct%',
+                      tone: tone,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Confirm the dish before estimating nutrition.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
+              const Spacer(),
+              PrimaryButton(
+                label: 'Looks correct',
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.portion,
+                    arguments: _food,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              SecondaryButton(
+                label: 'Edit food name',
+                icon: Icons.edit_outlined,
+                onPressed: _editFoodName,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _EditFoodNameDialog extends StatefulWidget {
-  const _EditFoodNameDialog({required this.initialName});
+class _EditFoodNameSheet extends StatefulWidget {
+  const _EditFoodNameSheet({required this.initialName});
 
   final String initialName;
 
   @override
-  State<_EditFoodNameDialog> createState() => _EditFoodNameDialogState();
+  State<_EditFoodNameSheet> createState() => _EditFoodNameSheetState();
 }
 
-class _EditFoodNameDialogState extends State<_EditFoodNameDialog> {
+class _EditFoodNameSheetState extends State<_EditFoodNameSheet> {
   late final TextEditingController _controller;
 
   @override
@@ -162,15 +153,18 @@ class _EditFoodNameDialogState extends State<_EditFoodNameDialog> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        title: const Text('Edit food name'),
-        content: SingleChildScrollView(
-          child: TextField(
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 8, 24, bottomInset + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Edit food name',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          TextField(
             controller: _controller,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Food name'),
@@ -178,15 +172,20 @@ class _EditFoodNameDialogState extends State<_EditFoodNameDialog> {
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _cancel,
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _save,
-            child: const Text('Save'),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _cancel,
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _save,
+                child: const Text('Save'),
+              ),
+            ],
           ),
         ],
       ),
