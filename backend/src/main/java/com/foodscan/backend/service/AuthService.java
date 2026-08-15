@@ -6,6 +6,7 @@ import com.foodscan.backend.dto.SignupRequest;
 import com.foodscan.backend.dto.UserDto;
 import com.foodscan.backend.entity.UserAccount;
 import com.foodscan.backend.exception.BadRequestException;
+import com.foodscan.backend.nutrition.DailyCalorieGoalCalculator;
 import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,15 +19,18 @@ public class AuthService {
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final DailyCalorieGoalCalculator dailyCalorieGoalCalculator;
 
     public AuthService(
             UserAccountRepository userAccountRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            DailyCalorieGoalCalculator dailyCalorieGoalCalculator
     ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.dailyCalorieGoalCalculator = dailyCalorieGoalCalculator;
     }
 
     @Transactional
@@ -42,6 +46,16 @@ public class AuthService {
         UserAccount user = new UserAccount();
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setDailyGoalKcal(
+                dailyCalorieGoalCalculator.calculate(
+                        user.getAge(),
+                        user.getWeightKg(),
+                        user.getHeightCm(),
+                        user.getGender(),
+                        user.getActivityLevel(),
+                        user.getGoal()
+                )
+        );
         user = userAccountRepository.saveAndFlush(user);
 
         if (user.getId() == null) {

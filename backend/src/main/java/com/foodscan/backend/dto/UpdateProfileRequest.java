@@ -9,6 +9,8 @@ public record UpdateProfileRequest(
         @NotNull @Min(10) @Max(120) Integer age,
         @NotNull @Min(20) @Max(400) Double weightKg,
         @NotNull @Min(80) @Max(250) Double heightCm,
+        @NotBlank String gender,
+        @NotBlank String activityLevel,
         @NotBlank String goal
 ) {
 }

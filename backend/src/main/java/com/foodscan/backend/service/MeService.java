@@ -9,38 +9,62 @@ import com.foodscan.backend.dto.TodayResponse;
 import com.foodscan.backend.dto.UpdateProfileRequest;
 import com.foodscan.backend.entity.MealEntry;
 import com.foodscan.backend.entity.UserAccount;
+import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
+import com.foodscan.backend.nutrition.DailyCalorieGoalCalculator;
 import com.foodscan.backend.repository.MealEntryRepository;
 import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class MeService {
 
+    private static final Set<String> ALLOWED_GOALS = Set.of(
+            "LOSE_WEIGHT",
+            "MAINTAIN",
+            "GAIN_MUSCLE"
+    );
+
+    private static final Set<String> ALLOWED_GENDERS = Set.of(
+            "MALE",
+            "FEMALE",
+            "UNSPECIFIED"
+    );
+
+    private static final Set<String> ALLOWED_ACTIVITY_LEVELS = Set.of(
+            "SEDENTARY",
+            "LIGHTLY_ACTIVE",
+            "MODERATELY_ACTIVE",
+            "VERY_ACTIVE"
+    );
+
     private final CurrentUserService currentUserService;
     private final UserAccountRepository userAccountRepository;
     private final MealEntryRepository mealEntryRepository;
+    private final DailyCalorieGoalCalculator dailyCalorieGoalCalculator;
 
     public MeService(
             CurrentUserService currentUserService,
             UserAccountRepository userAccountRepository,
-            MealEntryRepository mealEntryRepository
+            MealEntryRepository mealEntryRepository,
+            DailyCalorieGoalCalculator dailyCalorieGoalCalculator
     ) {
         this.currentUserService = currentUserService;
         this.userAccountRepository = userAccountRepository;
         this.mealEntryRepository = mealEntryRepository;
+        this.dailyCalorieGoalCalculator = dailyCalorieGoalCalculator;
     }
 
     @Transactional(readOnly = true)
@@ -101,29 +125,74 @@ public class MeService {
 
     @Transactional(readOnly = true)
     public ProfileResponse getProfile() {
-        UserAccount user = requireUser();
-        return new ProfileResponse(
-                user.getAge(),
-                user.getWeightKg(),
-                user.getHeightCm(),
-                user.getGoal()
-        );
+        return toProfileResponse(requireUser());
     }
 
     @Transactional
     public ProfileResponse updateProfile(UpdateProfileRequest request) {
         UserAccount user = requireUser();
+
+        String goal = normalize(request.goal());
+        String gender = normalize(request.gender());
+        String activityLevel = normalize(request.activityLevel());
+
+        if (!ALLOWED_GOALS.contains(goal)) {
+            throw new BadRequestException("Invalid goal. Use LOSE_WEIGHT, MAINTAIN, or GAIN_MUSCLE");
+        }
+        if (!ALLOWED_GENDERS.contains(gender)) {
+            throw new BadRequestException("Invalid gender. Use MALE, FEMALE, or UNSPECIFIED");
+        }
+        if (!ALLOWED_ACTIVITY_LEVELS.contains(activityLevel)) {
+            throw new BadRequestException(
+                    "Invalid activity level. Use SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, or VERY_ACTIVE"
+            );
+        }
+
         user.setAge(request.age());
         user.setWeightKg(request.weightKg());
         user.setHeightCm(request.heightCm());
-        user.setGoal(request.goal());
+        user.setGender(gender);
+        user.setActivityLevel(activityLevel);
+        user.setGoal(goal);
+        user.setDailyGoalKcal(
+                dailyCalorieGoalCalculator.calculate(
+                        request.age(),
+                        request.weightKg(),
+                        request.heightCm(),
+                        gender,
+                        activityLevel,
+                        goal
+                )
+        );
         userAccountRepository.save(user);
-        return getProfile();
+        return toProfileResponse(user);
+    }
+
+    private ProfileResponse toProfileResponse(UserAccount user) {
+        String gender = user.getGender() == null || user.getGender().isBlank()
+                ? "UNSPECIFIED"
+                : user.getGender();
+        String activity = user.getActivityLevel() == null || user.getActivityLevel().isBlank()
+                ? "SEDENTARY"
+                : user.getActivityLevel();
+        return new ProfileResponse(
+                user.getAge(),
+                user.getWeightKg(),
+                user.getHeightCm(),
+                gender,
+                activity,
+                user.getGoal(),
+                user.getDailyGoalKcal()
+        );
     }
 
     private UserAccount requireUser() {
         UUID userId = currentUserService.requireUserId();
         return userAccountRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ENGLISH);
     }
 }

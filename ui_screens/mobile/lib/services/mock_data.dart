@@ -44,7 +44,10 @@ class MockDataService {
     age: 30,
     weightKg: 70,
     heightCm: 170,
+    gender: ProfileGender.unspecified,
+    activityLevel: ActivityLevel.sedentary,
     goal: FitnessGoal.loseWeight,
+    dailyGoalKcal: 2200,
   );
 
   // Kept for type references in older UI paths if needed.

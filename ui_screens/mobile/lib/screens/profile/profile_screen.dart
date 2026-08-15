@@ -23,11 +23,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _ageController;
   late final TextEditingController _weightController;
   late final TextEditingController _heightController;
+  ProfileGender _gender = ProfileGender.unspecified;
+  ActivityLevel _activityLevel = ActivityLevel.sedentary;
   FitnessGoal _goal = FitnessGoal.loseWeight;
   bool _loading = true;
   bool _isSaving = false;
   bool _saved = false;
   String? _error;
+  int _dailyGoalKcal = 2200;
 
   @override
   void initState() {
@@ -59,7 +62,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _ageController.text = '${profile.age}';
         _weightController.text = '${profile.weightKg.round()}';
         _heightController.text = '${profile.heightCm.round()}';
+        _gender = profile.gender;
+        _activityLevel = profile.activityLevel;
         _goal = profile.goal;
+        _dailyGoalKcal = profile.dailyGoalKcal;
         _loading = false;
       });
     } on ApiException catch (error) {
@@ -84,11 +90,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await foodApi.updateProfile(
+      final updated = await foodApi.updateProfile(
         UserProfile(
           age: int.parse(_ageController.text.trim()),
           weightKg: double.parse(_weightController.text.trim()),
           heightCm: double.parse(_heightController.text.trim()),
+          gender: _gender,
+          activityLevel: _activityLevel,
           goal: _goal,
         ),
       );
@@ -96,6 +104,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _isSaving = false;
         _saved = true;
+        _dailyGoalKcal = updated.dailyGoalKcal;
+        _gender = updated.gender;
+        _activityLevel = updated.activityLevel;
+        _goal = updated.goal;
       });
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -110,6 +122,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('Could not save profile')),
       );
     }
+  }
+
+  Widget _choiceCard({
+    required bool selected,
+    required String title,
+    String? subtitle,
+    required VoidCallback? onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -152,9 +203,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 16),
                             ],
+                            AppCard(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.local_fire_department_outlined,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Daily calorie target',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
+                                        ),
+                                        Text(
+                                          '$_dailyGoalKcal kcal',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: AppColors.primaryDark,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             const SectionHeader(
                               title: 'Body metrics',
-                              subtitle: 'Used only for personal tracking',
+                              subtitle: 'Used to estimate your daily target',
                             ),
                             const SizedBox(height: 12),
                             AppCard(
@@ -230,46 +318,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             const SizedBox(height: 22),
+                            const SectionHeader(title: 'Gender'),
+                            const SizedBox(height: 12),
+                            ...ProfileGender.values.map((gender) {
+                              return _choiceCard(
+                                selected: _gender == gender,
+                                title: gender.label,
+                                onTap: _isSaving
+                                    ? null
+                                    : () => setState(() {
+                                          _gender = gender;
+                                          _saved = false;
+                                        }),
+                              );
+                            }),
+                            const SizedBox(height: 12),
+                            const SectionHeader(title: 'Activity level'),
+                            const SizedBox(height: 12),
+                            ...ActivityLevel.values.map((level) {
+                              return _choiceCard(
+                                selected: _activityLevel == level,
+                                title: level.label,
+                                subtitle: level.subtitle,
+                                onTap: _isSaving
+                                    ? null
+                                    : () => setState(() {
+                                          _activityLevel = level;
+                                          _saved = false;
+                                        }),
+                              );
+                            }),
+                            const SizedBox(height: 12),
                             const SectionHeader(title: 'Goal'),
                             const SizedBox(height: 12),
                             ...FitnessGoal.values.map((goal) {
-                              final selected = _goal == goal;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: AppCard(
-                                  onTap: _isSaving
-                                      ? null
-                                      : () => setState(() {
-                                            _goal = goal;
-                                            _saved = false;
-                                          }),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        selected
-                                            ? Icons.radio_button_checked
-                                            : Icons.radio_button_off,
-                                        color: selected
-                                            ? AppColors.primary
-                                            : AppColors.textSecondary,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          goal.label,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              return _choiceCard(
+                                selected: _goal == goal,
+                                title: goal.label,
+                                onTap: _isSaving
+                                    ? null
+                                    : () => setState(() {
+                                          _goal = goal;
+                                          _saved = false;
+                                        }),
                               );
                             }),
                             const SizedBox(height: 8),
                             Text(
-                              'Goals are for tracking only — not medical advice.',
+                              'Gender, activity, and goal adjust your daily calorie target on Home. Tracking only — not medical advice.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 24),

@@ -146,7 +146,10 @@ class FoodApiService {
       age: (body['age'] as num?)?.toInt() ?? 30,
       weightKg: (body['weightKg'] as num?)?.toDouble() ?? 70,
       heightCm: (body['heightCm'] as num?)?.toDouble() ?? 170,
+      gender: _genderFromApi(body['gender']?.toString()),
+      activityLevel: _activityFromApi(body['activityLevel']?.toString()),
       goal: _goalFromApi(body['goal']?.toString()),
+      dailyGoalKcal: (body['dailyGoalKcal'] as num?)?.toInt() ?? 2200,
     );
   }
 
@@ -157,6 +160,8 @@ class FoodApiService {
         'age': profile.age,
         'weightKg': profile.weightKg,
         'heightCm': profile.heightCm,
+        'gender': _genderToApi(profile.gender),
+        'activityLevel': _activityToApi(profile.activityLevel),
         'goal': _goalToApi(profile.goal),
       },
     );
@@ -164,7 +169,11 @@ class FoodApiService {
       age: (body['age'] as num?)?.toInt() ?? profile.age,
       weightKg: (body['weightKg'] as num?)?.toDouble() ?? profile.weightKg,
       heightCm: (body['heightCm'] as num?)?.toDouble() ?? profile.heightCm,
+      gender: _genderFromApi(body['gender']?.toString()),
+      activityLevel: _activityFromApi(body['activityLevel']?.toString()),
       goal: _goalFromApi(body['goal']?.toString()),
+      dailyGoalKcal:
+          (body['dailyGoalKcal'] as num?)?.toInt() ?? profile.dailyGoalKcal,
     );
   }
 
@@ -188,6 +197,56 @@ class FoodApiService {
         return 'GAIN_MUSCLE';
       case FitnessGoal.loseWeight:
         return 'LOSE_WEIGHT';
+    }
+  }
+
+  ProfileGender _genderFromApi(String? value) {
+    switch (value) {
+      case 'MALE':
+        return ProfileGender.male;
+      case 'FEMALE':
+        return ProfileGender.female;
+      case 'UNSPECIFIED':
+      default:
+        return ProfileGender.unspecified;
+    }
+  }
+
+  String _genderToApi(ProfileGender gender) {
+    switch (gender) {
+      case ProfileGender.male:
+        return 'MALE';
+      case ProfileGender.female:
+        return 'FEMALE';
+      case ProfileGender.unspecified:
+        return 'UNSPECIFIED';
+    }
+  }
+
+  ActivityLevel _activityFromApi(String? value) {
+    switch (value) {
+      case 'LIGHTLY_ACTIVE':
+        return ActivityLevel.lightlyActive;
+      case 'MODERATELY_ACTIVE':
+        return ActivityLevel.moderatelyActive;
+      case 'VERY_ACTIVE':
+        return ActivityLevel.veryActive;
+      case 'SEDENTARY':
+      default:
+        return ActivityLevel.sedentary;
+    }
+  }
+
+  String _activityToApi(ActivityLevel level) {
+    switch (level) {
+      case ActivityLevel.sedentary:
+        return 'SEDENTARY';
+      case ActivityLevel.lightlyActive:
+        return 'LIGHTLY_ACTIVE';
+      case ActivityLevel.moderatelyActive:
+        return 'MODERATELY_ACTIVE';
+      case ActivityLevel.veryActive:
+        return 'VERY_ACTIVE';
     }
   }
 }

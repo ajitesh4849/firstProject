@@ -29,6 +29,12 @@ public class UserAccount {
     private Double weightKg = 70.0;
     private Double heightCm = 170.0;
 
+    @Column(nullable = true)
+    private String gender = "UNSPECIFIED";
+
+    @Column(nullable = true)
+    private String activityLevel = "SEDENTARY";
+
     @Column(nullable = false)
     private String goal = "LOSE_WEIGHT";
 
@@ -85,6 +91,22 @@ public class UserAccount {
 
     public void setHeightCm(Double heightCm) {
         this.heightCm = heightCm;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getActivityLevel() {
+        return activityLevel;
+    }
+
+    public void setActivityLevel(String activityLevel) {
+        this.activityLevel = activityLevel;
     }
 
     public String getGoal() {
