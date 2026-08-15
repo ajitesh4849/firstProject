@@ -27,43 +27,11 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
   }
 
   Future<void> _editFoodName() async {
-    final controller = TextEditingController(text: _food.name);
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          title: const Text('Edit food name'),
-          content: SingleChildScrollView(
-            child: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Food name'),
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                FocusScope.of(dialogContext).unfocus();
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                FocusScope.of(dialogContext).unfocus();
-                Navigator.pop(dialogContext, controller.text.trim());
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+      barrierDismissible: true,
+      builder: (context) => _EditFoodNameDialog(initialName: _food.name),
     );
-    controller.dispose();
 
     if (result == null) return;
     if (result.isEmpty) {
@@ -152,6 +120,75 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _EditFoodNameDialog extends StatefulWidget {
+  const _EditFoodNameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_EditFoodNameDialog> createState() => _EditFoodNameDialogState();
+}
+
+class _EditFoodNameDialogState extends State<_EditFoodNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    FocusScope.of(context).unfocus();
+    Navigator.pop(context, _controller.text.trim());
+  }
+
+  void _cancel() {
+    FocusScope.of(context).unfocus();
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        title: const Text('Edit food name'),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Food name'),
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _cancel,
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _save,
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
