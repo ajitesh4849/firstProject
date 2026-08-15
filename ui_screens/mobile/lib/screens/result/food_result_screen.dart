@@ -30,28 +30,40 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
     final controller = TextEditingController(text: _food.name);
     final result = await showDialog<String>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           title: const Text('Edit food name'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Food name'),
-            textCapitalization: TextCapitalization.words,
+          content: SingleChildScrollView(
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Food name'),
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                FocusScope.of(dialogContext).unfocus();
+                Navigator.pop(dialogContext);
+              },
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              onPressed: () {
+                FocusScope.of(dialogContext).unfocus();
+                Navigator.pop(dialogContext, controller.text.trim());
+              },
               child: const Text('Save'),
             ),
           ],
         );
       },
     );
+    controller.dispose();
 
     if (result == null) return;
     if (result.isEmpty) {
@@ -73,61 +85,72 @@ class _FoodResultScreenState extends State<FoodResultScreen> {
             ? StatusChipTone.warning
             : StatusChipTone.danger;
 
+    // Keep scaffold from shrinking under the keyboard while the edit dialog is open.
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Detection')),
       body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.page,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const FoodImagePlaceholder(
-                height: 240,
-                label: 'Detected dish',
-              ),
-              const SizedBox(height: 24),
-              AppCard(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Text(
-                      _food.name,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 14),
-                    StatusChip(
-                      label: 'Confidence $confidencePct%',
-                      tone: tone,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Confirm the dish before estimating nutrition.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: AppSpacing.page,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const FoodImagePlaceholder(
+                        height: 240,
+                        label: 'Detected dish',
+                      ),
+                      const SizedBox(height: 24),
+                      AppCard(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Text(
+                              _food.name,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            const SizedBox(height: 14),
+                            StatusChip(
+                              label: 'Confidence $confidencePct%',
+                              tone: tone,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Confirm the dish before estimating nutrition.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      PrimaryButton(
+                        label: 'Looks correct',
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.portion,
+                            arguments: _food,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SecondaryButton(
+                        label: 'Edit food name',
+                        icon: Icons.edit_outlined,
+                        onPressed: _editFoodName,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const Spacer(),
-              PrimaryButton(
-                label: 'Looks correct',
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.portion,
-                    arguments: _food,
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              SecondaryButton(
-                label: 'Edit food name',
-                icon: Icons.edit_outlined,
-                onPressed: _editFoodName,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
