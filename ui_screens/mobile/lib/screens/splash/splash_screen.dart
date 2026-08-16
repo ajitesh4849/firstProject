@@ -31,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.06),
+      begin: const Offset(0, 0.04),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
@@ -59,7 +59,6 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       setState(() => _checkingSession = false);
     } catch (_) {
-      // Backend unreachable: keep token; let user continue manually.
       if (!mounted) return;
       setState(() => _checkingSession = false);
     }
@@ -75,6 +74,8 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -93,67 +94,75 @@ class _SplashScreenState extends State<SplashScreen>
               opacity: _fade,
               child: SlideTransition(
                 position: _slide,
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    Container(
-                      width: 112,
-                      height: 112,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: AppShadows.soft,
-                        border: Border.all(color: AppColors.border),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Spacer(flex: 2),
+                      Container(
+                        width: 112,
+                        height: 112,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: AppShadows.soft,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Icon(
+                          Icons.qr_code_scanner_rounded,
+                          size: 52,
+                          color: AppColors.primary,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.qr_code_scanner_rounded,
-                        size: 52,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Text(
-                      AppConstants.appName,
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      AppConstants.tagline,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.45,
-                          ),
-                    ),
-                    const Spacer(flex: 3),
-                    if (_checkingSession)
-                      const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(strokeWidth: 3),
-                      )
-                    else ...[
-                      PrimaryButton(
-                        label: apiClient.accessToken?.isNotEmpty == true
-                            ? 'Continue'
-                            : 'Get Started',
-                        onPressed: () {
-                          final hasToken =
-                              apiClient.accessToken?.isNotEmpty == true;
-                          Navigator.pushReplacementNamed(
-                            context,
-                            hasToken ? AppRoutes.home : AppRoutes.login,
-                          );
-                        },
+                      const SizedBox(height: 28),
+                      Text(
+                        AppConstants.appName,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineLarge,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Private by design. Your meals stay with you.',
+                        AppConstants.tagline,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.45,
+                            ),
                       ),
+                      const Spacer(flex: 3),
+                      if (_checkingSession)
+                        const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3),
+                          ),
+                        )
+                      else ...[
+                        PrimaryButton(
+                          label: apiClient.accessToken?.isNotEmpty == true
+                              ? 'Continue'
+                              : 'Get Started',
+                          onPressed: () {
+                            final hasToken =
+                                apiClient.accessToken?.isNotEmpty == true;
+                            Navigator.pushReplacementNamed(
+                              context,
+                              hasToken ? AppRoutes.home : AppRoutes.login,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Private by design. Your meals stay with you.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

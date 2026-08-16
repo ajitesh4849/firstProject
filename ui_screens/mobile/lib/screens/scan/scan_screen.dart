@@ -48,6 +48,13 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  void _clearPreview() {
+    setState(() {
+      _previewBytes = null;
+      _filename = 'meal.jpg';
+    });
+  }
+
   void _startScan() {
     final bytes = _previewBytes;
     if (bytes == null || bytes.isEmpty) {
@@ -69,6 +76,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasPreview = _previewBytes != null;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Scan')),
       body: SafeArea(
@@ -77,44 +86,31 @@ class _ScanScreenState extends State<ScanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                hasPreview ? 'Looking good — analyze when ready' : 'Add a meal photo',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                hasPreview
+                    ? 'Retake or pick another image anytime.'
+                    : 'Use the camera or gallery. Clear light works best.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadii.xl),
-                    color: const Color(0xFF101714),
                     boxShadow: AppShadows.soft,
+                    border: Border.all(color: AppColors.border),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (_previewBytes == null)
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              size: 64,
-                              color: Colors.white.withValues(alpha: 0.88),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Capture your meal',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(color: Colors.white),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Use clear lighting and fill the frame',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                          ],
-                        )
+                      if (!hasPreview)
+                        const _EmptyCapturePanel()
                       else
                         Image.memory(
                           _previewBytes!,
@@ -122,13 +118,31 @@ class _ScanScreenState extends State<ScanScreen> {
                           width: double.infinity,
                           height: double.infinity,
                         ),
-                      IgnorePointer(
-                        child: CustomPaint(
-                          painter: _ViewfinderPainter(
-                            color: Colors.white.withValues(alpha: 0.85),
+                      if (hasPreview) ...[
+                        IgnorePointer(
+                          child: CustomPaint(
+                            painter: _ViewfinderPainter(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
                           ),
                         ),
-                      ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Material(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(AppRadii.full),
+                            child: IconButton(
+                              tooltip: 'Remove photo',
+                              onPressed: _busy ? null : _clearPreview,
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -159,11 +173,111 @@ class _ScanScreenState extends State<ScanScreen> {
               PrimaryButton(
                 label: 'Analyze Food',
                 icon: Icons.document_scanner_outlined,
-                onPressed: _busy ? null : _startScan,
+                onPressed: _busy || !hasPreview ? null : _startScan,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyCapturePanel extends StatelessWidget {
+  const _EmptyCapturePanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE7F6F2),
+            Color(0xFFF7FBF9),
+            Color(0xFFEFE8DC),
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border),
+                boxShadow: AppShadows.soft,
+              ),
+              child: const Icon(
+                Icons.restaurant_rounded,
+                size: 44,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Capture your meal',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Fill the frame with the dish. Avoid heavy shadows and blur.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 22),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                _TipChip(icon: Icons.wb_sunny_outlined, label: 'Good light'),
+                _TipChip(icon: Icons.center_focus_strong, label: 'Center dish'),
+                _TipChip(icon: Icons.fullscreen, label: 'Fill frame'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TipChip extends StatelessWidget {
+  const _TipChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppRadii.full),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primaryDark),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
       ),
     );
   }
@@ -189,16 +303,12 @@ class _ViewfinderPainter extends CustomPainter {
     final right = size.width - inset;
     final bottom = size.height - inset;
 
-    // Top-left
     canvas.drawLine(Offset(left, top), Offset(left + len, top), paint);
     canvas.drawLine(Offset(left, top), Offset(left, top + len), paint);
-    // Top-right
     canvas.drawLine(Offset(right, top), Offset(right - len, top), paint);
     canvas.drawLine(Offset(right, top), Offset(right, top + len), paint);
-    // Bottom-left
     canvas.drawLine(Offset(left, bottom), Offset(left + len, bottom), paint);
     canvas.drawLine(Offset(left, bottom), Offset(left, bottom - len), paint);
-    // Bottom-right
     canvas.drawLine(Offset(right, bottom), Offset(right - len, bottom), paint);
     canvas.drawLine(Offset(right, bottom), Offset(right, bottom - len), paint);
   }
