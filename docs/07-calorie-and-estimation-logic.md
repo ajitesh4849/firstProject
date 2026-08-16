@@ -283,5 +283,10 @@ When barcode lookup fails (or there is no barcode), the app can photograph the i
 3. Same `PackagedFoodRiskAnalyzer` scores flags + swaps
 
 ### Mobile path
-Scan → **Packaged** tab → Scan barcode → result (flags + swaps)  
-If not found → **Photograph ingredients** → same result screen
+Scan → **Packaged** tab → Scan barcode  
+1. Local catalog (`packaged_product_seeds` in Postgres) — fast  
+2. Else Open Food Facts  
+3. Else photograph ingredients → optional **Add to FoodScan catalog**
+
+### Will the seed table slow the app?
+No. Barcode lookup is an indexed DB query (usually &lt; 5ms). When the product is in the catalog it is **faster** than calling Open Food Facts over the network.

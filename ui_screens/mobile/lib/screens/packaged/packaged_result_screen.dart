@@ -2,14 +2,31 @@ import 'package:flutter/material.dart';
 
 import '../../models/packaged_food_analysis.dart';
 import '../../routes/app_routes.dart';
+import '../../services/api_exception.dart';
+import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/primary_button.dart';
 
-class PackagedResultScreen extends StatelessWidget {
+class PackagedResultScreen extends StatefulWidget {
   const PackagedResultScreen({super.key, required this.analysis});
 
   final PackagedFoodAnalysis analysis;
+
+  @override
+  State<PackagedResultScreen> createState() => _PackagedResultScreenState();
+}
+
+class _PackagedResultScreenState extends State<PackagedResultScreen> {
+  late PackagedFoodAnalysis _analysis;
+  bool _saving = false;
+  String? _saveMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _analysis = widget.analysis;
+  }
 
   Color _scoreColor(String score) {
     switch (score.toUpperCase()) {
@@ -30,6 +47,48 @@ class PackagedResultScreen extends StatelessWidget {
         return AppColors.warning;
       default:
         return AppColors.textSecondary;
+    }
+  }
+
+  String _sourceLabel(String? source) {
+    switch (source) {
+      case 'SEED':
+        return 'FoodScan catalog';
+      case 'LABEL_PHOTO':
+        return 'From ingredients photo';
+      case 'OPEN_FOOD_FACTS':
+        return 'Open Food Facts';
+      default:
+        return 'Product data';
+    }
+  }
+
+  Future<void> _saveToCatalog() async {
+    if (_saving || !_analysis.canSaveToCatalog) return;
+    setState(() {
+      _saving = true;
+      _saveMessage = null;
+    });
+    try {
+      final saved = await foodApi.savePackagedToCatalog(_analysis);
+      if (!mounted) return;
+      setState(() {
+        _analysis = saved;
+        _saving = false;
+        _saveMessage = 'Saved. Next barcode scan will find this product faster.';
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saveMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saveMessage = 'Could not save this product right now.';
+      });
     }
   }
 
@@ -86,7 +145,7 @@ class PackagedResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scoreColor = _scoreColor(analysis.score);
+    final scoreColor = _scoreColor(_analysis.score);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Packaged check')),
@@ -105,21 +164,29 @@ class PackagedResultScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            analysis.productName,
+                            _analysis.productName,
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          if (analysis.brand != null &&
-                              analysis.brand!.trim().isNotEmpty) ...[
+                          if (_analysis.brand != null &&
+                              _analysis.brand!.trim().isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
-                              analysis.brand!,
+                              _analysis.brand!,
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ],
                           const SizedBox(height: 8),
                           Text(
-                            'Barcode ${analysis.barcode}',
+                            'Barcode ${_analysis.barcode}',
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _sourceLabel(_analysis.source),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.primaryDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                           const SizedBox(height: 14),
                           Container(
@@ -135,25 +202,25 @@ class PackagedResultScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              'Score: ${analysis.score}',
+                              'Score: ${_analysis.score}',
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(color: scoreColor),
                             ),
                           ),
-                          if (analysis.energyKcalPer100g != null ||
-                              analysis.sugarPer100g != null ||
-                              analysis.saltPer100g != null) ...[
+                          if (_analysis.energyKcalPer100g != null ||
+                              _analysis.sugarPer100g != null ||
+                              _analysis.saltPer100g != null) ...[
                             const SizedBox(height: 14),
                             Text(
                               [
-                                if (analysis.energyKcalPer100g != null)
-                                  '${analysis.energyKcalPer100g!.round()} kcal/100g',
-                                if (analysis.sugarPer100g != null)
-                                  'Sugar ${analysis.sugarPer100g!.toStringAsFixed(1)}g/100g',
-                                if (analysis.saltPer100g != null)
-                                  'Salt ${analysis.saltPer100g!.toStringAsFixed(2)}g/100g',
+                                if (_analysis.energyKcalPer100g != null)
+                                  '${_analysis.energyKcalPer100g!.round()} kcal/100g',
+                                if (_analysis.sugarPer100g != null)
+                                  'Sugar ${_analysis.sugarPer100g!.toStringAsFixed(1)}g/100g',
+                                if (_analysis.saltPer100g != null)
+                                  'Salt ${_analysis.saltPer100g!.toStringAsFixed(2)}g/100g',
                               ].join(' · '),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
@@ -163,11 +230,11 @@ class PackagedResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Flags (${analysis.riskCount})',
+                      'Flags (${_analysis.riskCount})',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 10),
-                    if (analysis.flags.isEmpty)
+                    if (_analysis.flags.isEmpty)
                       AppCard(
                         child: Text(
                           'No major rule-based concerns found for this product.',
@@ -175,7 +242,7 @@ class PackagedResultScreen extends StatelessWidget {
                         ),
                       )
                     else
-                      ...analysis.flags.map(
+                      ..._analysis.flags.map(
                         (flag) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: AppCard(
@@ -230,7 +297,7 @@ class PackagedResultScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final swap in analysis.healthierSwaps) ...[
+                          for (final swap in _analysis.healthierSwaps) ...[
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -249,14 +316,14 @@ class PackagedResultScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            if (swap != analysis.healthierSwaps.last)
+                            if (swap != _analysis.healthierSwaps.last)
                               const SizedBox(height: 10),
                           ],
                         ],
                       ),
                     ),
-                    if (analysis.ingredientsText != null &&
-                        analysis.ingredientsText!.trim().isNotEmpty) ...[
+                    if (_analysis.ingredientsText != null &&
+                        _analysis.ingredientsText!.trim().isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
                         'Ingredients',
@@ -266,7 +333,7 @@ class PackagedResultScreen extends StatelessWidget {
                       Builder(
                         builder: (context) {
                           final items =
-                              _ingredientItems(analysis.ingredientsText!);
+                              _ingredientItems(_analysis.ingredientsText!);
                           return AppCard(
                             padding:
                                 const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -330,7 +397,7 @@ class PackagedResultScreen extends StatelessWidget {
                     ],
                     const SizedBox(height: 14),
                     Text(
-                      analysis.disclaimer,
+                      _analysis.disclaimer,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -342,6 +409,41 @@ class PackagedResultScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_analysis.canSaveToCatalog) ...[
+                    PrimaryButton(
+                      label: 'Add to FoodScan catalog',
+                      icon: Icons.bookmark_add_outlined,
+                      isLoading: _saving,
+                      onPressed: _saving ? null : _saveToCatalog,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Saves this barcode locally so the next scan finds it without Open Food Facts.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (_saveMessage != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _saveMessage!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _analysis.canSaveToCatalog
+                                  ? AppColors.danger
+                                  : AppColors.success,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                  ] else if (_saveMessage != null) ...[
+                    Text(
+                      _saveMessage!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   PrimaryButton(
                     label: 'Scan another package',
                     icon: Icons.qr_code_scanner_rounded,

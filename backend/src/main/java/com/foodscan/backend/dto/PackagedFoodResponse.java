@@ -16,6 +16,10 @@ public record PackagedFoodResponse(
         List<PackagedRiskFlagDto> flags,
         List<String> healthierSwaps,
         String disclaimer,
-        boolean found
+        boolean found,
+        /** SEED | OPEN_FOOD_FACTS | LABEL_PHOTO */
+        String source,
+        /** True when result can be saved into the local catalog (valid barcode). */
+        boolean canSaveToCatalog
 ) {
 }

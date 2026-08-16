@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ai_model_provider: str = "mock"
     openai_api_key: str | None = None
     openai_vision_model: str = "gpt-4o-mini"
-    max_image_bytes: int = 8 * 1024 * 1024
+    max_image_bytes: int = 10 * 1024 * 1024
     allowed_image_types: str = "image/jpeg,image/png,image/webp,image/gif"
 
 

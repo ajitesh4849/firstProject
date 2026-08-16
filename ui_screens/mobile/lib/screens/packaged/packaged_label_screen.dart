@@ -29,12 +29,21 @@ class _PackagedLabelScreenState extends State<PackagedLabelScreen> {
     try {
       final file = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
-        maxWidth: 2000,
+        // Keep uploads small for backend/AI limits (phone cameras are large).
+        imageQuality: 70,
+        maxWidth: 1280,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();
       if (!mounted) return;
+      if (bytes.length > 8 * 1024 * 1024) {
+        setState(() {
+          _previewBytes = null;
+          _error =
+              'That photo is still too large. Move closer to the ingredients text and retake.';
+        });
+        return;
+      }
       setState(() {
         _previewBytes = bytes;
         _filename = file.name.isNotEmpty ? file.name : 'ingredients.jpg';
@@ -125,7 +134,7 @@ class _PackagedLabelScreenState extends State<PackagedLabelScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Tip: fill the frame with the ingredients panel and keep text sharp.',
+                                  'Tip: fill the frame with the ingredients panel. A clear close-up works better than a huge full-pack photo.',
                                   textAlign: TextAlign.center,
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),

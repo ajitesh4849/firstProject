@@ -37,6 +37,8 @@ class PackagedFoodAnalysis {
     this.sugarPer100g,
     this.saltPer100g,
     this.energyKcalPer100g,
+    this.source,
+    this.canSaveToCatalog = false,
   });
 
   final String barcode;
@@ -53,6 +55,49 @@ class PackagedFoodAnalysis {
   final List<String> healthierSwaps;
   final String disclaimer;
   final bool found;
+  final String? source;
+  final bool canSaveToCatalog;
+
+  bool get isFromLabelPhoto => source == 'LABEL_PHOTO';
+  bool get isFromCatalog => source == 'SEED';
+
+  PackagedFoodAnalysis copyWith({
+    String? barcode,
+    String? productName,
+    String? brand,
+    String? quantity,
+    String? ingredientsText,
+    double? sugarPer100g,
+    double? saltPer100g,
+    double? energyKcalPer100g,
+    String? score,
+    int? riskCount,
+    List<PackagedRiskFlag>? flags,
+    List<String>? healthierSwaps,
+    String? disclaimer,
+    bool? found,
+    String? source,
+    bool? canSaveToCatalog,
+  }) {
+    return PackagedFoodAnalysis(
+      barcode: barcode ?? this.barcode,
+      productName: productName ?? this.productName,
+      brand: brand ?? this.brand,
+      quantity: quantity ?? this.quantity,
+      ingredientsText: ingredientsText ?? this.ingredientsText,
+      sugarPer100g: sugarPer100g ?? this.sugarPer100g,
+      saltPer100g: saltPer100g ?? this.saltPer100g,
+      energyKcalPer100g: energyKcalPer100g ?? this.energyKcalPer100g,
+      score: score ?? this.score,
+      riskCount: riskCount ?? this.riskCount,
+      flags: flags ?? this.flags,
+      healthierSwaps: healthierSwaps ?? this.healthierSwaps,
+      disclaimer: disclaimer ?? this.disclaimer,
+      found: found ?? this.found,
+      source: source ?? this.source,
+      canSaveToCatalog: canSaveToCatalog ?? this.canSaveToCatalog,
+    );
+  }
 
   factory PackagedFoodAnalysis.fromJson(Map<String, dynamic> json) {
     final flagsJson = json['flags'] as List<dynamic>? ?? [];
@@ -76,6 +121,8 @@ class PackagedFoodAnalysis {
       disclaimer: json['disclaimer']?.toString() ??
           'Based on packaged product data and ingredient rules — not a lab test or medical advice.',
       found: json['found'] as bool? ?? true,
+      source: json['source']?.toString(),
+      canSaveToCatalog: json['canSaveToCatalog'] as bool? ?? false,
     );
   }
 }

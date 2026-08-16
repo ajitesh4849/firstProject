@@ -61,7 +61,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiErrorResponse("FILE_TOO_LARGE", "Uploaded image is too large", null));
+                .body(new ApiErrorResponse(
+                        "FILE_TOO_LARGE",
+                        "Photo is too large. Retake a closer shot of the ingredients text (under ~8 MB).",
+                        null
+                ));
     }
 
     @ExceptionHandler(Exception.class)

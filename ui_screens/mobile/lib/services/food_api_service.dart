@@ -120,6 +120,25 @@ class FoodApiService {
     return PackagedFoodAnalysis.fromJson(body);
   }
 
+  Future<PackagedFoodAnalysis> savePackagedToCatalog(
+    PackagedFoodAnalysis analysis,
+  ) async {
+    final body = await _client.postJson(
+      '/api/v1/packaged/catalog',
+      body: {
+        'barcode': analysis.barcode,
+        'productName': analysis.productName,
+        'brand': analysis.brand,
+        'quantity': analysis.quantity,
+        'ingredientsText': analysis.ingredientsText,
+        'sugarPer100g': analysis.sugarPer100g,
+        'saltPer100g': analysis.saltPer100g,
+        'energyKcalPer100g': analysis.energyKcalPer100g,
+      },
+    );
+    return PackagedFoodAnalysis.fromJson(body);
+  }
+
   Future<void> addMeal(NutritionInfo nutrition) async {
     await _client.postJson(
       '/api/v1/meals',
