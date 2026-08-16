@@ -6,6 +6,7 @@ import '../models/nutrition_info.dart';
 import '../models/packaged_food_analysis.dart';
 import '../models/user_profile.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 import 'placeholder_image.dart';
 
 class FoodApiService {
@@ -87,9 +88,16 @@ class FoodApiService {
   }
 
   Future<PackagedFoodAnalysis> analyzePackagedBarcode(String barcode) async {
-    final cleaned = barcode.trim();
+    final cleaned = barcode.replaceAll(RegExp(r'\D'), '');
     final body = await _client.getJson('/api/v1/packaged/barcode/$cleaned');
-    return PackagedFoodAnalysis.fromJson(body);
+    final analysis = PackagedFoodAnalysis.fromJson(body);
+    if (!analysis.found) {
+      throw ApiException(
+        'Product not found for barcode $cleaned',
+        statusCode: 404,
+      );
+    }
+    return analysis;
   }
 
   Future<void> addMeal(NutritionInfo nutrition) async {

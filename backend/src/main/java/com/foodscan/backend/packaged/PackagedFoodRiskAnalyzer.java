@@ -83,7 +83,7 @@ public class PackagedFoodRiskAnalyzer {
     }
 
     private void detectKeywordRisks(String ingredients, List<PackagedRiskFlagDto> flags) {
-        if (containsAny(ingredients, "hydrogenated", "partially hydrogenated", "trans fat", "vanaspati")) {
+        if (textContainsAny(ingredients, "hydrogenated", "partially hydrogenated", "trans fat", "vanaspati")) {
             flags.add(new PackagedRiskFlagDto(
                     "TRANS_FAT",
                     "Hydrogenated / trans fat risk",
@@ -91,7 +91,7 @@ public class PackagedFoodRiskAnalyzer {
                     "Label mentions hydrogenated fat or trans fat, which is best limited."
             ));
         }
-        if (containsAny(ingredients, "monosodium glutamate", "msg", "e621")) {
+        if (textContainsAny(ingredients, "monosodium glutamate", "msg", "e621")) {
             flags.add(new PackagedRiskFlagDto(
                     "MSG",
                     "Flavor enhancer (MSG)",
@@ -99,7 +99,7 @@ public class PackagedFoodRiskAnalyzer {
                     "MSG / E621 is common in savory snacks and instant foods."
             ));
         }
-        if (containsAny(ingredients, "high fructose corn syrup", "glucose-fructose", "invert sugar")) {
+        if (textContainsAny(ingredients, "high fructose corn syrup", "glucose-fructose", "invert sugar")) {
             flags.add(new PackagedRiskFlagDto(
                     "ADDED_SUGARS",
                     "Added refined sugars",
@@ -107,7 +107,7 @@ public class PackagedFoodRiskAnalyzer {
                     "Contains concentrated added sugars beyond basic sucrose."
             ));
         }
-        if (containsAny(ingredients, "aspartame", "sucralose", "acesulfame", "saccharin")) {
+        if (textContainsAny(ingredients, "aspartame", "sucralose", "acesulfame", "saccharin")) {
             flags.add(new PackagedRiskFlagDto(
                     "ARTIFICIAL_SWEETENER",
                     "Artificial sweetener",
@@ -115,7 +115,7 @@ public class PackagedFoodRiskAnalyzer {
                     "Contains non-nutritive artificial sweeteners."
             ));
         }
-        if (containsAny(ingredients, "palm oil") && containsAny(ingredients, "sugar", "glucose", "fructose")) {
+        if (textContainsAny(ingredients, "palm oil") && textContainsAny(ingredients, "sugar", "glucose", "fructose")) {
             flags.add(new PackagedRiskFlagDto(
                     "UPF_SIGNAL",
                     "Ultra-processed signals",
@@ -178,19 +178,19 @@ public class PackagedFoodRiskAnalyzer {
 
     private List<String> healthierSwaps(String name, String categories, List<PackagedRiskFlagDto> flags) {
         List<String> swaps = new ArrayList<>();
-        if (containsAny(name, categories, "chip", "crisp", "namkeen", "bhujia", "snack")) {
+        if (nameOrCategoryContains(name, categories, "chip", "crisp", "namkeen", "bhujia", "snack")) {
             swaps.add("Choose roasted chana, air-popped popcorn, or baked chips with shorter ingredient lists.");
             swaps.add("Prefer plain nuts/seeds without artificial colors or flavor enhancers.");
-        } else if (containsAny(name, categories, "cola", "soda", "soft drink", "beverage", "juice drink")) {
+        } else if (nameOrCategoryContains(name, categories, "cola", "soda", "soft drink", "beverage", "juice drink")) {
             swaps.add("Swap sugary drinks for water, sparkling water, or unsweetened buttermilk.");
             swaps.add("If you want flavor, try fresh lime water with less sugar.");
-        } else if (containsAny(name, categories, "noodle", "ramen", "instant")) {
+        } else if (nameOrCategoryContains(name, categories, "noodle", "ramen", "instant")) {
             swaps.add("Prefer whole-grain noodles or homemade stir-fry with vegetables.");
             swaps.add("If using instant packs, discard flavor sachet or use half to cut salt.");
-        } else if (containsAny(name, categories, "biscuit", "cookie", "chocolate", "candy", "sweet")) {
+        } else if (nameOrCategoryContains(name, categories, "biscuit", "cookie", "chocolate", "candy", "sweet")) {
             swaps.add("Choose dark chocolate (higher cocoa) in small portions, or fruit + nuts.");
             swaps.add("Look for biscuits with less sugar and no artificial colors.");
-        } else if (containsAny(name, categories, "cereal", "breakfast")) {
+        } else if (nameOrCategoryContains(name, categories, "cereal", "breakfast")) {
             swaps.add("Pick unsweetened oats or muesli and add fruit yourself.");
         } else {
             swaps.add("Compare labels: fewer additives and lower sugar/salt per 100g is usually better.");
@@ -204,7 +204,7 @@ public class PackagedFoodRiskAnalyzer {
         return swaps.stream().distinct().limit(4).toList();
     }
 
-    private static boolean containsAny(String text, String... keywords) {
+    private static boolean textContainsAny(String text, String... keywords) {
         for (String keyword : keywords) {
             if (text.contains(keyword)) {
                 return true;
@@ -213,8 +213,8 @@ public class PackagedFoodRiskAnalyzer {
         return false;
     }
 
-    private static boolean containsAny(String name, String categories, String... keywords) {
-        return containsAny(name + " " + categories, keywords);
+    private static boolean nameOrCategoryContains(String name, String categories, String... keywords) {
+        return textContainsAny(name + " " + categories, keywords);
     }
 
     private static String safe(String value) {

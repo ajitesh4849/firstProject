@@ -1,12 +1,14 @@
 package com.foodscan.backend.exception;
 
 import com.foodscan.backend.dto.ApiErrorResponse;
+import com.foodscan.backend.packaged.OpenFoodFactsUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +20,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiErrorResponse("NOT_FOUND", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiErrorResponse("NOT_FOUND", "Endpoint not found", null));
+    }
+
+    @ExceptionHandler(OpenFoodFactsUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleOffUnavailable(OpenFoodFactsUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiErrorResponse("PRODUCT_DB_UNAVAILABLE", ex.getMessage(), null));
     }
 
     @ExceptionHandler(BadRequestException.class)

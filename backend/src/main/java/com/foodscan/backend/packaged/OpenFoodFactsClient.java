@@ -1,26 +1,42 @@
 package com.foodscan.backend.packaged;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
 
 /**
  * Fetches packaged product data from Open Food Facts (no AI).
+ * OFF requires a descriptive User-Agent; anonymous clients are often blocked.
  */
 @Component
 public class OpenFoodFactsClient {
 
-    private final RestTemplate restTemplate;
-    private final String baseUrl;
+    private static final Logger log = LoggerFactory.getLogger(OpenFoodFactsClient.class);
+
+    private final RestClient restClient;
 
     public OpenFoodFactsClient(
-            @Value("${foodscan.openfoodfacts.base-url:https://world.openfoodfacts.org}") String baseUrl
+            @Value("${foodscan.openfoodfacts.base-url:https://world.openfoodfacts.org}") String baseUrl,
+            @Value("${foodscan.openfoodfacts.user-agent:FoodScan/1.0 (dev; contact@foodscan.local)}") String userAgent,
+            @Value("${foodscan.openfoodfacts.connect-timeout-ms:5000}") int connectTimeoutMs,
+            @Value("${foodscan.openfoodfacts.read-timeout-ms:15000}") int readTimeoutMs
     ) {
-        this.restTemplate = new RestTemplate();
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(connectTimeoutMs);
+        requestFactory.setReadTimeout(readTimeoutMs);
+        this.restClient = RestClient.builder()
+                .baseUrl(normalized)
+                .requestFactory(requestFactory)
+                .defaultHeader("User-Agent", userAgent)
+                .defaultHeader("Accept", "application/json")
+                .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -31,8 +47,11 @@ public class OpenFoodFactsClient {
         }
 
         try {
-            String url = baseUrl + "/api/v0/product/" + cleaned + ".json";
-            Map<String, Object> body = restTemplate.getForObject(url, Map.class);
+            Map<String, Object> body = restClient.get()
+                    .uri("/api/v0/product/{barcode}.json", cleaned)
+                    .retrieve()
+                    .body(Map.class);
+
             if (body == null) {
                 return OpenFoodFactsProduct.notFound(cleaned);
             }
@@ -42,10 +61,11 @@ public class OpenFoodFactsClient {
                 return OpenFoodFactsProduct.notFound(cleaned);
             }
 
-            Map<String, Object> product = (Map<String, Object>) body.get("product");
-            if (product == null) {
+            Object productObj = body.get("product");
+            if (!(productObj instanceof Map<?, ?> productMap)) {
                 return OpenFoodFactsProduct.notFound(cleaned);
             }
+            Map<String, Object> product = (Map<String, Object>) productMap;
 
             Map<String, Object> nutriments = product.get("nutriments") instanceof Map<?, ?> map
                     ? (Map<String, Object>) map
@@ -74,8 +94,18 @@ public class OpenFoodFactsClient {
                     ),
                     true
             );
-        } catch (RestClientResponseException | RuntimeException ex) {
-            return OpenFoodFactsProduct.notFound(cleaned);
+        } catch (RestClientException ex) {
+            log.warn("Open Food Facts lookup failed for barcode {}: {}", cleaned, ex.getMessage());
+            throw new OpenFoodFactsUnavailableException(
+                    "Could not reach the product database. Try again in a moment.",
+                    ex
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Unexpected Open Food Facts parse error for barcode {}", cleaned, ex);
+            throw new OpenFoodFactsUnavailableException(
+                    "Could not read product data right now. Try again.",
+                    ex
+            );
         }
     }
 

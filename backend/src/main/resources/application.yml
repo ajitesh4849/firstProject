@@ -31,6 +31,9 @@ foodscan:
     base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
   openfoodfacts:
     base-url: ${OPENFOODFACTS_BASE_URL:https://world.openfoodfacts.org}
+    user-agent: ${OPENFOODFACTS_USER_AGENT:FoodScan/1.0 (https://github.com/ajitesh4849/firstProject)}
+    connect-timeout-ms: ${OPENFOODFACTS_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${OPENFOODFACTS_READ_TIMEOUT_MS:15000}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   jwt:
