@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app_navigator.dart';
 import '../config/api_config.dart';
+import '../routes/app_routes.dart';
 import 'api_exception.dart';
 
 class ApiClient {
@@ -14,6 +17,7 @@ class ApiClient {
 
   final http.Client _http;
   String? _accessToken;
+  bool _handlingUnauthorized = false;
 
   String? get accessToken => _accessToken;
 
@@ -105,7 +109,7 @@ class ApiClient {
     return _decode(response);
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
+  Future<Map<String, dynamic>> _decode(http.Response response) async {
     Map<String, dynamic>? body;
     if (response.body.isNotEmpty) {
       final decoded = jsonDecode(response.body);
@@ -116,6 +120,10 @@ class ApiClient {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body ?? <String, dynamic>{};
+    }
+
+    if (response.statusCode == 401) {
+      await _handleUnauthorized();
     }
 
     final details = body?['details'];
@@ -130,6 +138,21 @@ class ApiClient {
             body?['detail']?.toString() ??
             'Request failed (${response.statusCode})';
     throw ApiException(message, statusCode: response.statusCode);
+  }
+
+  Future<void> _handleUnauthorized() async {
+    if (_handlingUnauthorized) return;
+    _handlingUnauthorized = true;
+    try {
+      await clearSession();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        final nav = appNavigatorKey.currentState;
+        if (nav == null) return;
+        nav.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      });
+    } finally {
+      _handlingUnauthorized = false;
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_navigator.dart';
 import 'routes/app_routes.dart';
 import 'services/api_client.dart';
 import 'utils/app_theme.dart';
@@ -32,6 +33,7 @@ class FoodScanApp extends StatelessWidget {
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
+      navigatorKey: appNavigatorKey,
       theme: AppTheme.light,
       initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.onGenerateRoute,

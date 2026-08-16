@@ -25,6 +25,7 @@ Older / alternate PDFs that describe a “web MVP dashboard first” or React Na
 4. `04-website-nextjs-spec.md`
 5. `05-api-contracts.md`
 6. `06-cursor-build-instructions.md`
+7. `07-calorie-and-estimation-logic.md` — daily goal math, meal estimates, ingredient awareness (explainers)
 
 ## Important
 

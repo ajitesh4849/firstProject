@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/user_profile.dart';
+import '../../routes/app_routes.dart';
+import '../../services/api_client.dart';
 import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
 import '../../services/mock_data.dart';
@@ -374,12 +376,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               isLoading: _isSaving,
                               onPressed: _save,
                             ),
+                            const SizedBox(height: 12),
+                            SecondaryButton(
+                              label: 'Log out',
+                              icon: Icons.logout_rounded,
+                              onPressed: _isSaving ? null : _logout,
+                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
       ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out'),
+        content: const Text('Sign out of FoodScan on this device?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await apiClient.clearSession();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.login,
+      (route) => false,
     );
   }
 }

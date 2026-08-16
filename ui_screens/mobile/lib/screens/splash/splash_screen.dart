@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
+import '../../services/api_client.dart';
+import '../../services/api_exception.dart';
+import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../widgets/primary_button.dart';
@@ -17,6 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  bool _checkingSession = true;
 
   @override
   void initState() {
@@ -31,6 +35,34 @@ class _SplashScreenState extends State<SplashScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await Future<void>.delayed(AppConstants.splashDelay);
+    if (!mounted) return;
+
+    final token = apiClient.accessToken;
+    if (token == null || token.isEmpty) {
+      setState(() => _checkingSession = false);
+      return;
+    }
+
+    try {
+      await foodApi.fetchProfile();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        await apiClient.clearSession();
+      }
+      if (!mounted) return;
+      setState(() => _checkingSession = false);
+    } catch (_) {
+      // Backend unreachable: keep token; let user continue manually.
+      if (!mounted) return;
+      setState(() => _checkingSession = false);
+    }
   }
 
   @override
@@ -94,18 +126,33 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                     ),
                     const Spacer(flex: 3),
-                    PrimaryButton(
-                      label: 'Get Started',
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.login);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Private by design. Your meals stay with you.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    if (_checkingSession)
+                      const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      )
+                    else ...[
+                      PrimaryButton(
+                        label: apiClient.accessToken?.isNotEmpty == true
+                            ? 'Continue'
+                            : 'Get Started',
+                        onPressed: () {
+                          final hasToken =
+                              apiClient.accessToken?.isNotEmpty == true;
+                          Navigator.pushReplacementNamed(
+                            context,
+                            hasToken ? AppRoutes.home : AppRoutes.login,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Private by design. Your meals stay with you.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ],
                 ),
               ),
