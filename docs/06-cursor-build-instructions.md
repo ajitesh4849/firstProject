@@ -15,13 +15,25 @@ These Cursor docs define the product. Supplementary PDFs that describe a web das
 ## Non-negotiable architecture
 
 ```text
-Flutter Mobile → Spring Boot Backend → AI Service
+Flutter Mobile → Spring Boot Backend → AI Service          (meal photos)
+Flutter Mobile → Spring Boot Backend → Open Food Facts     (packaged barcodes; no AI)
 Next.js Website → Spring Boot Backend (only when backend functionality is required)
 ```
 
-Do not make Flutter or Next.js call the AI service directly.
+Do not make Flutter or Next.js call the AI service or Open Food Facts directly.
 
 Do not turn the Next.js marketing site into an authenticated tracker in MVP.
+
+## Implemented product additions (keep docs + code aligned)
+
+When changing these areas, update `01`–`05` and `07` together:
+
+| Feature | Backend | Mobile |
+|---------|---------|--------|
+| JWT session gate + logout | JWT auth | Splash validate, `api_client` 401, Profile Log out |
+| Profile gender + activity → daily goal | `DailyCalorieGoalCalculator`, profile DTO | Profile fields + Home refresh |
+| Dish ingredient awareness | `IngredientAwarenessService` on scan | `IngredientAwarenessCard` on Food Result |
+| Packaged barcode Phase 1 | `PackagedFoodController` + OFF + rules | Scan toggle → barcode → result |
 
 ## Development order
 

@@ -222,8 +222,14 @@ A: No — estimated from dish name and portion size using approximate per-100g p
 **Q: Can you detect harmful chemicals in the photo?**  
 A: No. We show category-based awareness tips for typical preparations, with a clear non-lab disclaimer.
 
+**Q: How does packaged scanning work?**  
+A: Barcode → Open Food Facts via backend → rule flags (E-numbers, sugar/salt, keywords) + swaps. No AI in Phase 1.
+
+**Q: Why am I still logged in after closing the app?**  
+A: JWT is stored on device; Splash validates it and opens Home when still valid. Profile → Log out clears it.
+
 **Q: Where is data stored?**  
-A: User profile and daily goal in Postgres `users`; meals in meal entries; scans store detected food name/confidence.
+A: User profile and daily goal in Postgres `users`; meals in meal entries; scans store detected food name/confidence. Packaged lookups are not persisted as meals in Phase 1.
 
 ---
 
@@ -246,3 +252,32 @@ A: User profile and daily goal in Postgres `users`; meals in meal entries; scans
 | Ingredient awareness (API) | `backend/src/main/java/com/foodscan/backend/awareness/IngredientAwarenessService.java` |
 | Ingredient awareness (app) | `ui_screens/mobile/lib/models/ingredient_awareness.dart` |
 | Profile UI | `ui_screens/mobile/lib/screens/profile/profile_screen.dart` |
+| Packaged barcode API | `backend/src/main/java/com/foodscan/backend/controller/PackagedFoodController.java` |
+| Packaged risk rules | `backend/src/main/java/com/foodscan/backend/packaged/PackagedFoodRiskAnalyzer.java` |
+
+---
+
+## 9. Packaged food barcode check (no AI)
+
+### Purpose
+Scan a packaged product barcode and flag likely unhealthy ingredients using:
+1. **Open Food Facts** product lookup (free public DB)
+2. **Rule engine** in the backend (E-numbers, sugar/salt thresholds, keyword risks)
+3. **Healthier swap** suggestions by product category
+
+### API
+`GET /api/v1/packaged/barcode/{barcode}` (auth required)
+
+### Score
+- `BETTER` — no major rule hits  
+- `OK` — some medium concerns  
+- `CAUTION` — multiple / high-severity concerns  
+
+### Disclaimer
+Educational label/rules check — not a lab test or medical advice.
+
+### Later (optional AI)
+Use AI only for OCR / unlisted products / deeper explanations when barcode lookup fails.
+
+### Mobile path
+Scan → **Packaged** tab → Scan barcode → result (flags + swaps)

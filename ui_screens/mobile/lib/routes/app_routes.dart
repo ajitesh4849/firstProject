@@ -4,6 +4,8 @@ import '../screens/history/history_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/nutrition/nutrition_screen.dart';
+import '../screens/packaged/packaged_barcode_screen.dart';
+import '../screens/packaged/packaged_result_screen.dart';
 import '../screens/portion/portion_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/result/food_result_screen.dart';
@@ -12,6 +14,7 @@ import '../screens/scan/scanning_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../models/food_item.dart';
 import '../models/nutrition_info.dart';
+import '../models/packaged_food_analysis.dart';
 import '../models/scan_image_args.dart';
 
 class AppRoutes {
@@ -25,6 +28,8 @@ class AppRoutes {
   static const String nutrition = '/nutrition';
   static const String history = '/history';
   static const String profile = '/profile';
+  static const String packagedBarcode = '/packaged-barcode';
+  static const String packagedResult = '/packaged-result';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -52,6 +57,11 @@ class AppRoutes {
         return _fade(const HistoryScreen(), settings);
       case profile:
         return _fade(const ProfileScreen(), settings);
+      case packagedBarcode:
+        return _slide(const PackagedBarcodeScreen(), settings);
+      case packagedResult:
+        final analysis = settings.arguments as PackagedFoodAnalysis;
+        return _slide(PackagedResultScreen(analysis: analysis), settings);
       default:
         return _fade(
           Scaffold(

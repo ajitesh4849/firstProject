@@ -8,12 +8,12 @@ The Next.js site is marketing only and does not replace these screens.
 
 ## Technology
 
-- Flutter
-- Dart
-- Material 3
+- Flutter / Dart / Material 3
 - Android + iOS
-- Use responsive layouts where practical
-- UI first; backend/AI integration later
+- Camera + gallery (`image_picker`)
+- Barcode (`mobile_scanner`)
+- JWT session (`shared_preferences`)
+- HTTP client to Spring Boot (`API_BASE_URL` via `--dart-define`)
 
 ## Suggested Flutter Structure
 
@@ -22,64 +22,51 @@ ui_screens/mobile/
 ├── android/
 ├── ios/
 ├── lib/
-│   ├── main.dart
+│   ├── main.dart                 # loadSession() then runApp
 │   ├── screens/
 │   │   ├── splash/
-│   │   │   └── splash_screen.dart
 │   │   ├── login/
-│   │   │   └── login_screen.dart
 │   │   ├── home/
-│   │   │   └── home_screen.dart
 │   │   ├── scan/
-│   │   │   ├── scan_screen.dart
+│   │   │   ├── scan_screen.dart           # Meal photo | Packaged toggle
 │   │   │   └── scanning_screen.dart
+│   │   ├── packaged/
+│   │   │   ├── packaged_barcode_screen.dart
+│   │   │   └── packaged_result_screen.dart
 │   │   ├── result/
-│   │   │   └── food_result_screen.dart
+│   │   │   └── food_result_screen.dart    # + IngredientAwarenessCard
 │   │   ├── portion/
-│   │   │   └── portion_screen.dart
 │   │   ├── nutrition/
-│   │   │   └── nutrition_screen.dart
 │   │   ├── history/
-│   │   │   └── history_screen.dart
 │   │   └── profile/
-│   │       └── profile_screen.dart
 │   ├── widgets/
+│   │   └── ingredient_awareness_card.dart
 │   ├── models/
 │   ├── services/
+│   │   ├── api_client.dart                # JWT, 401 → Login
+│   │   └── daily_calorie_goal_calculator.dart  # preview only; server saves goal
 │   ├── routes/
+│   │   ├── app_routes.dart
+│   │   └── app_navigator.dart             # rootNavigatorKey for 401 redirect
 │   └── utils/
 └── pubspec.yaml
 ```
 
 ## Screen 1 – Splash
 
-Layout:
+Centered logo + title + tagline.
 
-```text
-[ APP LOGO ]
+Behavior:
+1. If no token → Login
+2. If token → `GET /api/v1/me/profile`
+   - success → Home
+   - 401 → clear session → Login
 
-FoodScan
-Scan food. Know calories. Eat smarter.
+No “Get Started” gate once session exists.
 
-[ Get Started ]
-```
+## Screen 2 – Login / Signup
 
-Get Started → Login.
-
-## Screen 2 – Login
-
-```text
-FoodScan
-
-[ Email / Phone ]
-[ Password ]
-
-[ Login ]
-
-[ Continue with Google ]
-```
-
-For UI phase, login can navigate to Home without real authentication.
+Email + password. Calls `POST /api/v1/auth/login` or signup. On success stores JWT and goes to Home.
 
 ## Screen 3 – Home / Today
 
@@ -90,45 +77,32 @@ Today
 [ progress ]
 
 Breakfast       450 kcal
-Lunch           680 kcal
-Dinner          720 kcal
+...
 
              [ + Scan Food ]
 
 Home     History     Profile
 ```
 
-Requirements:
-- Daily calorie summary
-- Progress indicator
-- Meal list
-- Primary scan CTA
-- Bottom navigation
+- Loads `GET /api/v1/me/today` on appear (also when returning from Profile so goal updates).
+- Progress uses `caloriesConsumed` / `dailyGoalKcal`.
 
 ## Screen 4 – Scan
 
-```text
-[ Camera Preview ]
+Mode toggle: **Meal photo** | **Packaged**.
 
-[ Scan Food ]
+### Meal photo
+- Camera preview / gallery pick
+- Primary CTA: Scan Food
+- Empty state: soft surface + copy (“Point at a plated meal…”) — not a black void
 
-Point camera at your food
-```
-
-For the first UI version, use a camera placeholder. Real camera integration comes later.
+### Packaged
+- Explains barcode scan
+- CTA → Packaged barcode screen
 
 ## Screen 5 – Scanning
 
-```text
-[ Food Image / Placeholder ]
-
-Detecting food...
-Estimating calories...
-
-[ Loading ]
-```
-
-For UI-only phase, use a short simulated delay and navigate to Food Result.
+Meal-only. Shows processing while `POST /api/v1/scans` runs, then Food Result.
 
 ## Screen 6 – Food Result
 
@@ -138,112 +112,95 @@ For UI-only phase, use a short simulated delay and navigate to Food Result.
 Paneer Butter Masala
 Confidence: 92%
 
+[ Ingredient awareness card ]
+  Why this dish may be unhealthy
+  What to reduce / prefer
+  Tip
+  Disclaimer: typical preparation, not lab analysis
+
 [ Looks Correct ]
-[ Edit Food Name ]
+[ Edit Food Name ]   ← bottom sheet (not dialog) for keyboard-safe edit
 ```
 
-Edit can initially show an editable field/dialog.
+Rename refreshes local awareness rules from the new name when possible.
 
 ## Screen 7 – Portion
 
-```text
-Select Portion
-
-( ) Small     100g
-(•) Medium    200g
-( ) Large     300g
-
-Custom grams [______]
-
-[ Continue ]
-```
-
-The selected portion must be passed to Nutrition Result.
+Preset Small / Medium / Large + custom grams. Keyboard-safe layout (scroll + viewInsets).
 
 ## Screen 8 – Nutrition
 
+Macros + Add to Today / Scan Another. Disclaimer: estimated values.
+
+## Screen 9 – Packaged barcode
+
+- Live barcode camera (`mobile_scanner`)
+- Or enter digits manually
+- Calls `GET /api/v1/packaged/barcode/{code}`
+- On success → Packaged result
+
+## Screen 10 – Packaged result
+
 ```text
-380 kcal
+Product name
+Brand · barcode
+Score: BETTER | OK | CAUTION
 
-Protein   14g
-Carbs     12g
-Fat       30g
-
-[ Add to Today ]
-[ Scan Another ]
+Nutrition (per 100g if available)
+Flags (E-numbers, sugar/salt, MSG, hydrogenated fats, …)
+Healthier swaps
+Disclaimer: educational, not medical advice
 ```
 
-Show a small disclaimer:
-“Estimated nutrition values.”
+No calorie add-to-today in Phase 1 (awareness only).
 
-## Screen 9 – History
+## Screen 11 – History
 
-```text
-History
+Day summaries from `GET /api/v1/me/history`.
 
-[ Calendar ]
-
-Mon   1900 kcal
-Tue   2100 kcal
-Wed   1750 kcal
-
-Weekly average
-```
-
-UI-only calendar can use mock data.
-
-## Screen 10 – Profile / Goals
+## Screen 12 – Profile / Goals
 
 ```text
-Profile
+Age / Weight / Height
+Gender          (Male | Female | Prefer not to say)
+Activity level  (Sedentary … Very active)
+Goal            (Lose | Maintain | Gain)
 
-Age       [ 30 ]
-Weight    [ 70 kg ]
-Height    [ 170 cm ]
-
-Goal
-(•) Lose Weight
-( ) Maintain
-( ) Gain Muscle
+Suggested daily target (preview) → saved as dailyGoalKcal on Save
 
 [ Save ]
+[ Log out ]
 ```
 
-Do not calculate medical recommendations yet.
+Save → `PUT /api/v1/me/profile` (backend recalculates `dailyGoalKcal`).
+
+Log out → clear JWT → Login.
 
 ## Navigation
 
 ```text
-Splash
-  ↓
-Login
-  ↓
-Home
-  ↓
-Scan
-  ↓
-Scanning
-  ↓
-Food Result
-  ↓
-Portion
-  ↓
-Nutrition
-  ↓
-Home
+Splash ──(valid token)──→ Home
+  └──(no/invalid)──→ Login → Home
+
+Home → Scan
+  ├─ Meal photo → Scanning → Food Result → Portion → Nutrition → Home
+  └─ Packaged → Barcode → Packaged Result → (back)
 
 Home ↔ History
-Home ↔ Profile
+Home ↔ Profile → Log out → Login
 ```
+
+## Session / API client rules
+
+- Attach `Authorization: Bearer <token>` on protected calls
+- On **401**, clear session and navigate to Login via root navigator
+- Physical device: `API_BASE_URL` must be the **backend host LAN IP** (Docker machine), not localhost
 
 ## UI Rules
 
-- Reusable primary button
-- Reusable cards
-- Consistent spacing
-- Accessible text contrast
-- Avoid hard-coded screen dimensions
-- Keep screen widgets focused on presentation
-- Put reusable widgets in `widgets/`
-- Put navigation in `routes/`
-- Do not add backend dependencies during the UI-only phase
+- Reusable primary button / consistent spacing
+- Accessible contrast
+- Avoid hard-coded screen dimensions; respect keyboard insets on forms
+- Prefer bottom sheets for edits that need keyboard
+- Keep presentation in screens; API in `services/`
+- Cards allowed for interactive result blocks (awareness, packaged flags)

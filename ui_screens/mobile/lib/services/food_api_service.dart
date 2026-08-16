@@ -3,6 +3,7 @@ import '../models/food_item.dart';
 import '../models/ingredient_awareness.dart';
 import '../models/meal.dart';
 import '../models/nutrition_info.dart';
+import '../models/packaged_food_analysis.dart';
 import '../models/user_profile.dart';
 import 'api_client.dart';
 import 'placeholder_image.dart';
@@ -83,6 +84,12 @@ class FoodApiService {
       fatGrams: (body['fatGrams'] as num?)?.toDouble() ?? 0,
       estimated: body['estimated'] as bool? ?? true,
     );
+  }
+
+  Future<PackagedFoodAnalysis> analyzePackagedBarcode(String barcode) async {
+    final cleaned = barcode.trim();
+    final body = await _client.getJson('/api/v1/packaged/barcode/$cleaned');
+    return PackagedFoodAnalysis.fromJson(body);
   }
 
   Future<void> addMeal(NutritionInfo nutrition) async {

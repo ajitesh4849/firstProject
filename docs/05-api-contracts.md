@@ -1,12 +1,18 @@
 # FoodScan – Initial API Contracts
 
-These are initial contracts for integration after UI is complete.
+These contracts are for Flutter ↔ Spring Boot integration.
 
 **Primary API consumer:** Flutter mobile app.
 
-The Next.js marketing website should **not** call scan, meal, today, history, or profile APIs in MVP. It may later call a contact (or similar) endpoint if added.
+The Next.js marketing website should **not** call scan, meal, today, history, packaged, or profile APIs in MVP.
 
-## POST /api/v1/auth/signup
+Protected routes require `Authorization: Bearer <accessToken>`.
+
+---
+
+## Auth
+
+### POST /api/v1/auth/signup
 
 Request:
 
@@ -19,9 +25,7 @@ Request:
 
 Response: same shape as login (`accessToken` + `user`). Password min length: 6.
 
-Protected routes require `Authorization: Bearer <accessToken>`.
-
-## POST /api/v1/auth/login
+### POST /api/v1/auth/login
 
 Request:
 
@@ -44,10 +48,14 @@ Response:
 }
 ```
 
-## POST /api/v1/scans
+---
 
-Multipart request:
-- image: food image
+## Meal photo scan
+
+### POST /api/v1/scans
+
+Multipart:
+- `image`: food image
 
 Response:
 
@@ -56,12 +64,23 @@ Response:
   "scanId": "scan-123",
   "food": {
     "name": "Paneer Butter Masala",
-    "confidence": 0.92
+    "confidence": 0.92,
+    "awareness": {
+      "categoryKey": "paneer_curry",
+      "headline": "Why this dish may be unhealthy",
+      "concerns": ["Often high in saturated fat from cream and butter", "..."],
+      "reduceTips": ["Ask for less cream / butter", "..."],
+      "preferTips": ["Prefer grilled paneer or tomato-based gravy", "..."],
+      "tip": "If you eat this, pair with salad and walk after.",
+      "disclaimer": "Based on typical preparation of this dish type—not a lab analysis of your plate."
+    }
   }
 }
 ```
 
-## POST /api/v1/scans/{scanId}/nutrition
+`awareness` may be `null` when no category rule matches. Rules are dish-category heuristics (see `IngredientAwarenessService`), not ingredient detection from the image.
+
+### POST /api/v1/scans/{scanId}/nutrition
 
 Request:
 
@@ -70,6 +89,8 @@ Request:
   "portionGrams": 200
 }
 ```
+
+Optional: corrected food name if user edited detection.
 
 Response:
 
@@ -85,32 +106,124 @@ Response:
 }
 ```
 
-## POST /api/v1/meals
+Nutrition estimation logic: `docs/07-calorie-and-estimation-logic.md`.
+
+---
+
+## Packaged food (Phase 1 — no AI)
+
+### GET /api/v1/packaged/barcode/{barcode}
+
+Path: digits-only barcode (EAN/UPC style).
+
+Response (success):
+
+```json
+{
+  "found": true,
+  "barcode": "3017620422003",
+  "productName": "Nutella",
+  "brand": "Ferrero",
+  "imageUrl": "https://...",
+  "ingredientsText": "...",
+  "nutrition": {
+    "energyKcal100g": 539,
+    "sugars100g": 56.3,
+    "salt100g": 0.107,
+    "fat100g": 30.9,
+    "saturatedFat100g": 10.6,
+    "proteins100g": 6.3,
+    "carbohydrates100g": 57.5
+  },
+  "score": "CAUTION",
+  "scoreLabel": "Caution — check labels often",
+  "flags": [
+    {
+      "code": "HIGH_SUGAR",
+      "severity": "HIGH",
+      "title": "High sugar",
+      "detail": "Sugars per 100g are elevated vs common guidance thresholds."
+    }
+  ],
+  "healthierSwaps": [
+    "Choose plain yogurt + fruit instead of sweet spreads",
+    "..."
+  ],
+  "disclaimer": "Educational only — not medical advice. Based on Open Food Facts + ingredient rules."
+}
+```
+
+`score`: `BETTER` | `OK` | `CAUTION`.
+
+Not found:
+
+```json
+{
+  "found": false,
+  "barcode": "0000000000000",
+  "message": "Product not found in Open Food Facts"
+}
+```
+
+Backend calls Open Food Facts; clients must not call OFF directly. Rule details: `docs/07-calorie-and-estimation-logic.md` §9.
+
+---
+
+## Meals & daily tracking
+
+### POST /api/v1/meals
 
 Adds a nutrition result to today's intake.
 
-## GET /api/v1/me/today
+### GET /api/v1/me/today
 
-Returns today's calorie total and meals.
+Returns today's calorie total, `dailyGoalKcal`, and meals.
 
-## GET /api/v1/me/history
+Used by Home on load (including after Profile save) so the progress bar stays in sync.
+
+### GET /api/v1/me/history
 
 Returns historical calorie summaries.
 
-## GET /api/v1/me/profile
+---
 
-Returns user profile and goals.
+## Profile
 
-## PUT /api/v1/me/profile
+### GET /api/v1/me/profile
 
-Updates profile and goals.
+Returns user profile and goals, including:
+
+```json
+{
+  "email": "user@example.com",
+  "age": 30,
+  "weightKg": 70,
+  "heightCm": 170,
+  "gender": "MALE",
+  "activityLevel": "MODERATELY_ACTIVE",
+  "goal": "MAINTAIN",
+  "dailyGoalKcal": 2200
+}
+```
+
+Enums (as persisted / returned):
+- `gender`: `MALE` | `FEMALE` | `PREFER_NOT_TO_SAY` (nullable until set)
+- `activityLevel`: `SEDENTARY` | `LIGHTLY_ACTIVE` | `MODERATELY_ACTIVE` | `VERY_ACTIVE`
+- `goal`: `LOSE_WEIGHT` | `MAINTAIN` | `GAIN_MUSCLE`
+
+### PUT /api/v1/me/profile
+
+Updates profile fields. Backend recalculates and stores `dailyGoalKcal` (Mifflin–St Jeor × activity × goal adjustment; clamp 1200–4000). See `docs/07-calorie-and-estimation-logic.md`.
+
+Request body includes age, weight, height, gender, activity level, goal (and any other allowed profile fields).
+
+---
 
 ## AI Contract (internal)
 
 ### POST /predict
 
-Multipart:
-- image
+Multipart: `image`
 
 Response:
 
@@ -121,5 +234,6 @@ Response:
 }
 ```
 
-The AI service is internal and should not be exposed directly to clients.
-Spring Boot is the only caller of `/predict`.
+The AI service is internal and must not be exposed to clients.  
+Spring Boot is the only caller of `/predict`.  
+**Packaged barcode flow does not call AI** in Phase 1.

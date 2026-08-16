@@ -8,6 +8,8 @@ import '../../routes/app_routes.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/primary_button.dart';
 
+enum _ScanMode { meal, packaged }
+
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -20,6 +22,7 @@ class _ScanScreenState extends State<ScanScreen> {
   Uint8List? _previewBytes;
   String _filename = 'meal.jpg';
   bool _busy = false;
+  _ScanMode _mode = _ScanMode.meal;
 
   Future<void> _pick(ImageSource source) async {
     setState(() => _busy = true);
@@ -86,99 +89,200 @@ class _ScanScreenState extends State<ScanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                hasPreview ? 'Looking good — analyze when ready' : 'Add a meal photo',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                hasPreview
-                    ? 'Retake or pick another image anytime.'
-                    : 'Use the camera or gallery. Clear light works best.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              SegmentedButton<_ScanMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: _ScanMode.meal,
+                    label: Text('Meal photo'),
+                    icon: Icon(Icons.restaurant_outlined),
+                  ),
+                  ButtonSegment(
+                    value: _ScanMode.packaged,
+                    label: Text('Packaged'),
+                    icon: Icon(Icons.qr_code_2_outlined),
+                  ),
+                ],
+                selected: {_mode},
+                onSelectionChanged: (value) {
+                  setState(() => _mode = value.first);
+                },
               ),
               const SizedBox(height: 16),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadii.xl),
-                    boxShadow: AppShadows.soft,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (!hasPreview)
-                        const _EmptyCapturePanel()
-                      else
-                        Image.memory(
-                          _previewBytes!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                      if (hasPreview) ...[
-                        IgnorePointer(
-                          child: CustomPaint(
-                            painter: _ViewfinderPainter(
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
+              if (_mode == _ScanMode.packaged)
+                Expanded(child: _PackagedIntro(
+                  onScan: () {
+                    Navigator.pushNamed(context, AppRoutes.packagedBarcode);
+                  },
+                ))
+              else ...[
+                Text(
+                  hasPreview
+                      ? 'Looking good — analyze when ready'
+                      : 'Add a meal photo',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  hasPreview
+                      ? 'Retake or pick another image anytime.'
+                      : 'Use the camera or gallery. Clear light works best.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadii.xl),
+                      boxShadow: AppShadows.soft,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (!hasPreview)
+                          const _EmptyCapturePanel()
+                        else
+                          Image.memory(
+                            _previewBytes!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
                           ),
-                        ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Material(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(AppRadii.full),
-                            child: IconButton(
-                              tooltip: 'Remove photo',
-                              onPressed: _busy ? null : _clearPreview,
-                              icon: const Icon(
-                                Icons.close_rounded,
-                                color: Colors.white,
+                        if (hasPreview) ...[
+                          IgnorePointer(
+                            child: CustomPaint(
+                              painter: _ViewfinderPainter(
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                           ),
-                        ),
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Material(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.full),
+                              child: IconButton(
+                                tooltip: 'Remove photo',
+                                onPressed: _busy ? null : _clearPreview,
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      label: 'Camera',
-                      icon: Icons.photo_camera_outlined,
-                      isLoading: _busy,
-                      onPressed: () => _pick(ImageSource.camera),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Camera',
+                        icon: Icons.photo_camera_outlined,
+                        isLoading: _busy,
+                        onPressed: () => _pick(ImageSource.camera),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SecondaryButton(
-                      label: 'Gallery',
-                      icon: Icons.photo_library_outlined,
-                      isLoading: _busy,
-                      onPressed: () => _pick(ImageSource.gallery),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Gallery',
+                        icon: Icons.photo_library_outlined,
+                        isLoading: _busy,
+                        onPressed: () => _pick(ImageSource.gallery),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              PrimaryButton(
-                label: 'Analyze Food',
-                icon: Icons.document_scanner_outlined,
-                onPressed: _busy || !hasPreview ? null : _startScan,
-              ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                PrimaryButton(
+                  label: 'Analyze Food',
+                  icon: Icons.document_scanner_outlined,
+                  onPressed: _busy || !hasPreview ? null : _startScan,
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PackagedIntro extends StatelessWidget {
+  const _PackagedIntro({required this.onScan});
+
+  final VoidCallback onScan;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              border: Border.all(color: AppColors.border),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFE7F6F2),
+                  Color(0xFFF7FBF9),
+                  Color(0xFFEFE8DC),
+                ],
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppShadows.soft,
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    size: 40,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Check packaged food',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Scan a barcode to see ingredient flags, sugar/salt alerts, and healthier swaps — using product data + app rules (no AI).',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        PrimaryButton(
+          label: 'Scan barcode',
+          icon: Icons.qr_code_2_outlined,
+          onPressed: onScan,
+        ),
+      ],
     );
   }
 }

@@ -8,9 +8,10 @@ FoodScan is a food-scanning and calorie-tracking application.
 
 **Public website:** Marketing and SEO only. It explains the product; it does not replace the mobile tracker in MVP.
 
-Core user journey (mobile):
+Core user journeys (mobile):
 
-Scan food → identify food → confirm food → select portion → estimate calories/nutrition → add to daily intake → track history.
+1. **Meal photo:** Scan food → identify food → confirm food (+ ingredient awareness) → select portion → estimate calories/nutrition → add to daily intake → track history.
+2. **Packaged food:** Scan barcode → look up product → rule-based risk flags + healthier swaps (no AI in Phase 1).
 
 ## 2. Platforms
 
@@ -19,7 +20,7 @@ Flutter/Dart application targeting:
 - Android
 - iOS
 
-Owns the full authenticated user journey: login, scan, portion, nutrition, today/history, profile/goals.
+Owns the full authenticated user journey: login/session, scan (meal + packaged), portion, nutrition, today/history, profile/goals.
 
 ### Public Website (marketing only)
 React + Next.js + TypeScript.
@@ -48,24 +49,31 @@ If a browser-based authenticated tracker is needed later, add it as a **separate
 ### Backend
 Java + Spring Boot REST API.
 
+Owns auth/JWT, profile calorie-goal calculation, meal scan orchestration, nutrition estimation, packaged barcode analysis (Open Food Facts + rules), persistence.
+
 ### AI
-Python + FastAPI service for food image recognition/inference.
+Python + FastAPI service for **meal photo** food recognition/inference.
 
 Clients never call the AI service directly.
+
+**Packaged Phase 1 does not use AI** (barcode + Open Food Facts + rule engine). AI may be used later for OCR / unlisted products / deeper label explanation.
 
 ## 3. Initial MVP
 
 ### Mobile
-1. Splash
-2. Login
-3. Home/Today
+1. Splash (session gate: saved JWT → Home, else Login)
+2. Login / Signup
+3. Home/Today (daily consumed vs `dailyGoalKcal`)
 4. Scan
-5. Scanning/Processing
-6. Food Result
+   - Meal photo (camera/gallery)
+   - Packaged (barcode)
+5. Scanning/Processing (meal)
+6. Food Result (+ dish-category ingredient awareness)
 7. Portion Selection
 8. Nutrition Result
-9. History
-10. Profile/Goals
+9. Packaged barcode + Packaged result
+10. History
+11. Profile/Goals (age, weight, height, gender, activity, goal, logout)
 
 ### Website (public / marketing)
 1. Home
@@ -77,23 +85,39 @@ Clients never call the AI service directly.
 7. Privacy
 8. Terms
 
-## 4. Important Product Rule
+## 4. Important Product Rules
 
-Calorie values from an image are estimates. The UI must communicate that nutrition and portion estimates are approximate and should not be presented as medically exact.
+- Calorie values from an image are **estimates**. UI must not present them as medically exact.
+- Dish **ingredient awareness** is category-based typical advice — **not** lab analysis of the plate.
+- Packaged checks use product DB + ingredient **rules** — educational only, not medical advice.
+- Session: JWT stored on device; splash validates and routes to Home when valid; Profile has explicit Log out.
 
-## 5. Source of truth
+## 5. Profile & daily calorie target
 
-These Cursor docs (`01`–`06` + root README) define product shape and architecture.
+Profile fields drive `daily_goal_kcal` on save:
+- Age, weight (kg), height (cm)
+- Gender: Male / Female / Prefer not to say
+- Activity: Sedentary / Lightly / Moderately / Very active
+- Goal: Lose Weight / Maintain / Gain Muscle
+
+Formula details: `docs/07-calorie-and-estimation-logic.md`.
+
+Home refreshes goal via `GET /api/v1/me/today` when the Home screen loads (e.g. after navigating from Profile).
+
+## 6. Source of truth
+
+These Cursor docs (`01`–`07` + root README / DEPLOY) define product shape and architecture.
 
 Supplementary PDFs or notes may suggest web-first dashboards, different mobile frameworks, or different API shapes. Those suggestions are **non-binding** unless explicitly merged into these docs.
 
-## 6. Future Features
+## 7. Future Features
 
-- Barcode scanning
-- Indian food recognition improvements
+- Packaged OCR / AI deeper label analysis (when barcode missing)
+- Indian food recognition improvements (stronger vision model)
 - Meal recommendations
 - Water tracking
 - Health platform integrations
 - Subscription/premium features
 - Family accounts
 - Optional authenticated web client (separate from marketing site)
+- Refresh tokens / secure storage hardening

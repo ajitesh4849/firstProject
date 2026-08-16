@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>FoodScan needs camera access to photograph your meals for calorie estimation.</string>
+	<string>FoodScan needs camera access to photograph meals and scan packaged food barcodes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>FoodScan needs photo library access so you can choose a meal image to scan.</string>
 	<key>NSAppTransportSecurity</key>
