@@ -110,62 +110,25 @@ Nutrition estimation logic: `docs/07-calorie-and-estimation-logic.md`.
 
 ---
 
-## Packaged food (Phase 1 — no AI)
+## Packaged food (Phase 1 barcode + Phase 2 label fallback)
 
 ### GET /api/v1/packaged/barcode/{barcode}
 
 Path: digits-only barcode (EAN/UPC style).
 
-Response (success):
+Response (success): same `PackagedFoodResponse` shape (score, flags, swaps, ingredients…).
 
-```json
-{
-  "found": true,
-  "barcode": "3017620422003",
-  "productName": "Nutella",
-  "brand": "Ferrero",
-  "imageUrl": "https://...",
-  "ingredientsText": "...",
-  "nutrition": {
-    "energyKcal100g": 539,
-    "sugars100g": 56.3,
-    "salt100g": 0.107,
-    "fat100g": 30.9,
-    "saturatedFat100g": 10.6,
-    "proteins100g": 6.3,
-    "carbohydrates100g": 57.5
-  },
-  "score": "CAUTION",
-  "scoreLabel": "Caution — check labels often",
-  "flags": [
-    {
-      "code": "HIGH_SUGAR",
-      "severity": "HIGH",
-      "title": "High sugar",
-      "detail": "Sugars per 100g are elevated vs common guidance thresholds."
-    }
-  ],
-  "healthierSwaps": [
-    "Choose plain yogurt + fruit instead of sweet spreads",
-    "..."
-  ],
-  "disclaimer": "Educational only — not medical advice. Based on Open Food Facts + ingredient rules."
-}
-```
+Not found → HTTP 404. Mobile offers **Photograph ingredients** fallback.
 
-`score`: `BETTER` | `OK` | `CAUTION`.
+### POST /api/v1/packaged/label
 
-Not found:
+Multipart:
+- `image`: photo of the ingredients panel (required)
+- `barcode`: optional digits if known
 
-```json
-{
-  "found": false,
-  "barcode": "0000000000000",
-  "message": "Product not found in Open Food Facts"
-}
-```
+Flow: Spring Boot → AI `/read-label` → same rule engine as barcode.
 
-Backend calls Open Food Facts; clients must not call OFF directly. Rule details: `docs/07-calorie-and-estimation-logic.md` §9.
+Backend calls Open Food Facts / AI; clients must not call them directly. Rule details: `docs/07-calorie-and-estimation-logic.md` §9.
 
 ---
 

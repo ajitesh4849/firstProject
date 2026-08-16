@@ -5,6 +5,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/nutrition/nutrition_screen.dart';
 import '../screens/packaged/packaged_barcode_screen.dart';
+import '../screens/packaged/packaged_label_screen.dart';
 import '../screens/packaged/packaged_result_screen.dart';
 import '../screens/portion/portion_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String history = '/history';
   static const String profile = '/profile';
   static const String packagedBarcode = '/packaged-barcode';
+  static const String packagedLabel = '/packaged-label';
   static const String packagedResult = '/packaged-result';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -59,6 +61,12 @@ class AppRoutes {
         return _fade(const ProfileScreen(), settings);
       case packagedBarcode:
         return _slide(const PackagedBarcodeScreen(), settings);
+      case packagedLabel:
+        final barcodeHint = settings.arguments as String?;
+        return _slide(
+          PackagedLabelScreen(barcodeHint: barcodeHint),
+          settings,
+        );
       case packagedResult:
         final analysis = settings.arguments as PackagedFoodAnalysis;
         return _slide(PackagedResultScreen(analysis: analysis), settings);

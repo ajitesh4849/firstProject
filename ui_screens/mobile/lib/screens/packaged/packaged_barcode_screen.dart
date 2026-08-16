@@ -25,6 +25,7 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
   );
   bool _busy = false;
   bool _handled = false;
+  bool _productNotFound = false;
   String? _error;
   String? _lastBarcode;
 
@@ -84,13 +85,17 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
       );
     } on ApiException catch (error) {
       if (!mounted) return;
+      final notFound = error.statusCode == 404;
       final message = switch (error.statusCode) {
-        404 => 'Product not found for this barcode. Try another pack or enter digits manually.',
-        502 || 503 => 'Product database is temporarily unavailable. Try again in a moment.',
+        404 =>
+          'This barcode isn’t in our product database yet.',
+        502 || 503 =>
+          'Product database is temporarily unavailable. Try again in a moment.',
         _ => error.message,
       };
       setState(() {
         _busy = false;
+        _productNotFound = notFound;
         _error = message;
       });
       // Keep camera paused until user taps Try again — avoids blink/retry loop.
@@ -98,6 +103,7 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
+        _productNotFound = false;
         _error =
             'Could not reach the server. Check Wi‑Fi and that the backend is running.';
       });
@@ -107,10 +113,19 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
   Future<void> _tryAgain() async {
     setState(() {
       _error = null;
+      _productNotFound = false;
       _handled = false;
       _busy = false;
     });
     await _resumeScanner();
+  }
+
+  void _openLabelFallback() {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.packagedLabel,
+      arguments: _lastBarcode ?? _manualController.text.trim(),
+    );
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -148,7 +163,7 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'We’ll look up the product and flag common unhealthy ingredients using rules (no AI).',
+                'We’ll look up the product by barcode. If it isn’t found, you can photograph the ingredients list instead.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
@@ -200,9 +215,29 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              if (_productNotFound) ...[
+                                const SizedBox(height: 10),
+                                const Text(
+                                  'You can photograph the ingredients list instead.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ],
                               const SizedBox(height: 16),
-                              FilledButton(
+                              if (_productNotFound) ...[
+                                FilledButton.icon(
+                                  onPressed: _openLabelFallback,
+                                  icon: const Icon(Icons.document_scanner_outlined),
+                                  label: const Text('Photograph ingredients'),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              OutlinedButton(
                                 onPressed: _tryAgain,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white70),
+                                ),
                                 child: const Text('Scan again'),
                               ),
                             ],
@@ -232,6 +267,14 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
+                if (_productNotFound) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _openLabelFallback,
+                    icon: const Icon(Icons.document_scanner_outlined),
+                    label: const Text('Photograph ingredients instead'),
+                  ),
+                ],
               ],
               const SizedBox(height: 14),
               PrimaryButton(

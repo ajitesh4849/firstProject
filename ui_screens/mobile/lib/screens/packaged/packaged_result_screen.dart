@@ -33,6 +33,57 @@ class PackagedResultScreen extends StatelessWidget {
     }
   }
 
+  /// Split label text into readable rows and normalize ALL-CAPS walls of text.
+  List<String> _ingredientItems(String raw) {
+    final cleaned = raw
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'\s*,\s*'), ', ')
+        .trim();
+    if (cleaned.isEmpty) return const [];
+
+    final parts = cleaned
+        .split(RegExp(r',\s*(?![^()]*\))'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+
+    if (parts.length <= 1) {
+      // Fallback: split on semicolons / periods if no useful commas.
+      final alt = cleaned
+          .split(RegExp(r'[;•|]'))
+          .map((p) => p.trim())
+          .where((p) => p.isNotEmpty)
+          .toList();
+      return (alt.length > 1 ? alt : [cleaned])
+          .map(_readableIngredient)
+          .toList();
+    }
+    return parts.map(_readableIngredient).toList();
+  }
+
+  String _readableIngredient(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return text;
+
+    // Keep short codes like E110 as-is; soften long ALL-CAPS labels.
+    final letters = text.replaceAll(RegExp(r'[^A-Za-z]'), '');
+    final mostlyUpper =
+        letters.length >= 8 && letters == letters.toUpperCase();
+    if (!mostlyUpper) return text;
+
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      // Preserve tokens like (71%), E110, MSG.
+      if (RegExp(r'^[A-Z]?\d').hasMatch(word) ||
+          RegExp(r'^\(?\d').hasMatch(word) ||
+          word.length <= 3) {
+        return word;
+      }
+      final lower = word.toLowerCase();
+      return lower[0].toUpperCase() + lower.substring(1);
+    }).join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final scoreColor = _scoreColor(analysis.score);
@@ -212,11 +263,69 @@ class PackagedResultScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 10),
-                      AppCard(
-                        child: Text(
-                          analysis.ingredientsText!,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final items =
+                              _ingredientItems(analysis.ingredientsText!);
+                          return AppCard(
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (var i = 0; i < items.length; i++) ...[
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 22,
+                                        height: 22,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primarySoft,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadii.full,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${i + 1}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: AppColors.primaryDark,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          items[i],
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: AppColors.textPrimary,
+                                                height: 1.45,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (i < items.length - 1)
+                                    const Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 8),
+                                      child: Divider(height: 1),
+                                    ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ],
                     const SizedBox(height: 14),

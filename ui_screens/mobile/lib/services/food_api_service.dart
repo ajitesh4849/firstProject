@@ -100,6 +100,26 @@ class FoodApiService {
     return analysis;
   }
 
+  Future<PackagedFoodAnalysis> analyzePackagedLabel({
+    required List<int> imageBytes,
+    String filename = 'ingredients.jpg',
+    String? barcodeHint,
+  }) async {
+    final fields = <String, String>{};
+    final cleaned = (barcodeHint ?? '').replaceAll(RegExp(r'\D'), '');
+    if (cleaned.length >= 8 && cleaned.length <= 14) {
+      fields['barcode'] = cleaned;
+    }
+    final body = await _client.postMultipart(
+      path: '/api/v1/packaged/label',
+      fieldName: 'image',
+      bytes: imageBytes,
+      filename: filename,
+      fields: fields,
+    );
+    return PackagedFoodAnalysis.fromJson(body);
+  }
+
   Future<void> addMeal(NutritionInfo nutrition) async {
     await _client.postJson(
       '/api/v1/meals',

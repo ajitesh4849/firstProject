@@ -268,7 +268,7 @@ class _PackagedIntro extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Scan a barcode to see ingredient flags, sugar/salt alerts, and healthier swaps — using product data + app rules (no AI).',
+                  'Scan a barcode to see ingredient flags and healthier swaps. If the barcode isn’t found, you can photograph the ingredients list.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),

@@ -276,8 +276,12 @@ Scan a packaged product barcode and flag likely unhealthy ingredients using:
 ### Disclaimer
 Educational label/rules check — not a lab test or medical advice.
 
-### Later (optional AI)
-Use AI only for OCR / unlisted products / deeper explanations when barcode lookup fails.
+### Later (optional AI) — now available as fallback
+When barcode lookup fails (or there is no barcode), the app can photograph the ingredients panel:
+1. Mobile → `POST /api/v1/packaged/label` (image)
+2. Backend → AI `/read-label` (OCR-style extract)
+3. Same `PackagedFoodRiskAnalyzer` scores flags + swaps
 
 ### Mobile path
-Scan → **Packaged** tab → Scan barcode → result (flags + swaps)
+Scan → **Packaged** tab → Scan barcode → result (flags + swaps)  
+If not found → **Photograph ingredients** → same result screen

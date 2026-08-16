@@ -90,10 +90,14 @@ class ApiClient {
     required List<int> bytes,
     required String filename,
     String contentType = 'image/jpeg',
+    Map<String, String>? fields,
   }) async {
     final request = http.MultipartRequest('POST', _uri(path));
     if (_accessToken != null && _accessToken!.isNotEmpty) {
       request.headers['Authorization'] = 'Bearer $_accessToken';
+    }
+    if (fields != null) {
+      request.fields.addAll(fields);
     }
     request.files.add(
       http.MultipartFile.fromBytes(
