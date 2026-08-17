@@ -53,5 +53,18 @@ class PackagedFoodRiskAnalyzerTest {
         assertEquals("BETTER", result.score());
         List<PackagedRiskFlagDto> flags = result.flags();
         assertTrue(flags.isEmpty());
+        assertTrue(result.ingredients().stream().anyMatch(i -> "HEALTHIER".equals(i.tag())));
+    }
+
+    @Test
+    void marksUnhealthyAndHealthierIngredients() {
+        List<com.foodscan.backend.dto.PackagedIngredientMarkDto> marks = analyzer.markIngredients(
+                "Whole wheat atta, sugar, palm oil, E110, skimmed milk powder"
+        );
+        assertTrue(marks.stream().anyMatch(m -> m.text().toLowerCase().contains("atta") && "HEALTHIER".equals(m.tag())));
+        assertTrue(marks.stream().anyMatch(m -> m.text().equalsIgnoreCase("sugar") && "NEUTRAL".equals(m.tag())));
+        assertTrue(marks.stream().anyMatch(m -> m.text().toLowerCase().contains("palm") && "UNHEALTHY".equals(m.tag())));
+        assertTrue(marks.stream().anyMatch(m -> m.text().toLowerCase().contains("e110") && "UNHEALTHY".equals(m.tag())));
+        assertTrue(marks.stream().anyMatch(m -> m.text().toLowerCase().contains("milk") && "HEALTHIER".equals(m.tag())));
     }
 }

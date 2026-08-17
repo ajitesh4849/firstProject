@@ -1,9 +1,11 @@
 package com.foodscan.backend.packaged;
 
+import com.foodscan.backend.dto.PackagedIngredientMarkDto;
 import com.foodscan.backend.dto.PackagedRiskFlagDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +44,29 @@ public class PackagedFoodRiskAnalyzer {
             Map.entry("251", "Sodium nitrate (preservative)")
     );
 
+    private static final List<String> UNHEALTHY_KEYWORDS = List.of(
+            // Strong signals only — avoid marking plain sugar/milk sugar everywhere.
+            "hydrogenated", "partially hydrogenated", "trans fat", "vanaspati",
+            "monosodium glutamate", "msg", "e621",
+            "high fructose corn syrup", "glucose-fructose", "invert sugar", "invert syrup",
+            "aspartame", "sucralose", "acesulfame", "saccharin",
+            "palm oil", "palmolein", "palm olein",
+            "refined wheat flour", "maida", "refined flour",
+            "artificial flavour", "artificial flavor", "artificial colour", "artificial color",
+            "added sugar", "maltodextrin",
+            "shortening", "margarine"
+    );
+
+    private static final List<String> HEALTHIER_KEYWORDS = List.of(
+            "whole wheat", "wholemeal", "whole grain", "atta", "oats", "rolled oats",
+            "chickpea", "chana", "lentil", "millets", "ragi", "jowar", "bajra",
+            "skimmed milk", "yoghurt", "yogurt", "curd",
+            "almond", "cashew", "walnut", "sesame",
+            "spinach", "carrot",
+            "olive oil", "mustard oil",
+            "cocoa solids", "dark chocolate", "dietary fiber", "dietary fibre"
+    );
+
     public AnalysisResult analyze(OpenFoodFactsProduct product) {
         List<PackagedRiskFlagDto> flags = new ArrayList<>();
         String ingredients = safe(product.ingredientsText()).toLowerCase(Locale.ENGLISH);
@@ -54,8 +79,95 @@ public class PackagedFoodRiskAnalyzer {
 
         String score = scoreFor(flags);
         List<String> swaps = healthierSwaps(name, categories, flags);
+        List<PackagedIngredientMarkDto> marked = markIngredients(product.ingredientsText());
 
-        return new AnalysisResult(score, flags, swaps, DISCLAIMER);
+        return new AnalysisResult(score, flags, swaps, DISCLAIMER, marked);
+    }
+
+    /**
+     * Split ingredients and tag each as UNHEALTHY / HEALTHIER / NEUTRAL for UI highlighting.
+     * Tags use soft language in the app: Watch / Prefer (not absolute healthy/unhealthy).
+     */
+    List<PackagedIngredientMarkDto> markIngredients(String rawIngredients) {
+        List<String> parts = splitIngredients(rawIngredients);
+        List<PackagedIngredientMarkDto> marked = new ArrayList<>();
+        for (String part : parts) {
+            marked.add(classifyIngredient(part));
+        }
+        return marked;
+    }
+
+    private PackagedIngredientMarkDto classifyIngredient(String text) {
+        String lower = text.toLowerCase(Locale.ENGLISH);
+
+        Matcher matcher = E_NUMBER.matcher(lower);
+        while (matcher.find()) {
+            String code = matcher.group(1).toLowerCase(Locale.ENGLISH);
+            if (COLOR_CODES.containsKey(code)) {
+                return new PackagedIngredientMarkDto(
+                        text, "UNHEALTHY", "Watch: artificial color (" + COLOR_CODES.get(code) + ")"
+                );
+            }
+            if (PRESERVATIVE_CODES.containsKey(code)) {
+                return new PackagedIngredientMarkDto(
+                        text, "UNHEALTHY", "Watch: preservative (" + PRESERVATIVE_CODES.get(code) + ")"
+                );
+            }
+            if ("621".equals(code)) {
+                return new PackagedIngredientMarkDto(text, "UNHEALTHY", "Watch: flavor enhancer (MSG)");
+            }
+        }
+
+        for (String keyword : UNHEALTHY_KEYWORDS) {
+            if (containsKeyword(lower, keyword)) {
+                return new PackagedIngredientMarkDto(
+                        text,
+                        "UNHEALTHY",
+                        "Watch: often limited on cleaner labels (" + keyword + ")"
+                );
+            }
+        }
+
+        for (String keyword : HEALTHIER_KEYWORDS) {
+            if (containsKeyword(lower, keyword)) {
+                return new PackagedIngredientMarkDto(
+                        text,
+                        "HEALTHIER",
+                        "Prefer: more recognizable whole-food style ingredient"
+                );
+            }
+        }
+
+        return new PackagedIngredientMarkDto(text, "NEUTRAL", null);
+    }
+
+    /** Prefer whole-phrase matches so short tokens do not over-fire. */
+    private static boolean containsKeyword(String haystack, String keyword) {
+        if (keyword.length() <= 3) {
+            return Pattern.compile("\\b" + Pattern.quote(keyword) + "\\b", Pattern.CASE_INSENSITIVE)
+                    .matcher(haystack)
+                    .find();
+        }
+        return haystack.contains(keyword);
+    }
+
+    private static List<String> splitIngredients(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        String cleaned = raw.replaceAll("\\s+", " ").trim();
+        String[] byComma = cleaned.split(",\\s*(?![^()]*\\))");
+        List<String> parts = Arrays.stream(byComma)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        if (parts.size() > 1) {
+            return parts;
+        }
+        return Arrays.stream(cleaned.split("[;•|]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 
     private void detectENumbers(String ingredients, List<PackagedRiskFlagDto> flags) {
@@ -225,7 +337,8 @@ public class PackagedFoodRiskAnalyzer {
             String score,
             List<PackagedRiskFlagDto> flags,
             List<String> healthierSwaps,
-            String disclaimer
+            String disclaimer,
+            List<PackagedIngredientMarkDto> ingredients
     ) {
     }
 }

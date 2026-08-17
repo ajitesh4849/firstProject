@@ -143,6 +143,122 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
     }).join(' ');
   }
 
+  Widget _legendChip(
+    BuildContext context, {
+    required Color color,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+
+  Widget _ingredientRow(
+    BuildContext context,
+    int index,
+    PackagedIngredientMark item,
+  ) {
+    final Color accent;
+    final Color soft;
+    final String badge;
+    if (item.isUnhealthy) {
+      accent = AppColors.danger;
+      soft = AppColors.dangerSoft;
+      badge = 'Watch';
+    } else if (item.isHealthier) {
+      accent = AppColors.success;
+      soft = const Color(0xFFD1FADF);
+      badge = 'Prefer';
+    } else {
+      accent = AppColors.textSecondary;
+      soft = AppColors.surfaceMuted;
+      badge = '';
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: soft,
+            borderRadius: BorderRadius.circular(AppRadii.full),
+          ),
+          child: Text(
+            '$index',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _readableIngredient(item.text),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textPrimary,
+                            height: 1.45,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  if (badge.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: soft,
+                        borderRadius: BorderRadius.circular(AppRadii.full),
+                      ),
+                      child: Text(
+                        badge,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (item.reason != null && item.reason!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  item.reason!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: accent,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scoreColor = _scoreColor(_analysis.score);
@@ -322,75 +438,101 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                         ],
                       ),
                     ),
-                    if (_analysis.ingredientsText != null &&
-                        _analysis.ingredientsText!.trim().isNotEmpty) ...[
+                    if ((_analysis.ingredients.isNotEmpty) ||
+                        (_analysis.ingredientsText != null &&
+                            _analysis.ingredientsText!.trim().isNotEmpty)) ...[
                       const SizedBox(height: 16),
                       Text(
                         'Ingredients',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 6),
                       Builder(
                         builder: (context) {
-                          final items =
-                              _ingredientItems(_analysis.ingredientsText!);
-                          return AppCard(
-                            padding:
-                                const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (var i = 0; i < items.length; i++) ...[
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 22,
-                                        height: 22,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primarySoft,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadii.full,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          '${i + 1}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: AppColors.primaryDark,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          items[i],
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: AppColors.textPrimary,
-                                                height: 1.45,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (i < items.length - 1)
-                                    const Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 8),
-                                      child: Divider(height: 1),
+                          final items = _analysis.ingredients.isNotEmpty
+                              ? _analysis.ingredients
+                              : _ingredientItems(_analysis.ingredientsText!)
+                                  .map(
+                                    (text) => PackagedIngredientMark(
+                                      text: text,
+                                      tag: 'NEUTRAL',
                                     ),
+                                  )
+                                  .toList();
+                          final watchCount =
+                              items.where((i) => i.isUnhealthy).length;
+                          final preferCount =
+                              items.where((i) => i.isHealthier).length;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                '$watchCount to watch · $preferCount preferable'
+                                '${items.length - watchCount - preferCount > 0 ? ' · ${items.length - watchCount - preferCount} neutral' : ''}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Soft labels only — educational rules, not medical advice.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 6,
+                                children: [
+                                  _legendChip(
+                                    context,
+                                    color: AppColors.danger,
+                                    label: 'Watch / limit',
+                                  ),
+                                  _legendChip(
+                                    context,
+                                    color: AppColors.success,
+                                    label: 'Prefer',
+                                  ),
+                                  _legendChip(
+                                    context,
+                                    color: AppColors.textSecondary,
+                                    label: 'Neutral',
+                                  ),
                                 ],
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 10),
+                              AppCard(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  14,
+                                  16,
+                                  14,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (var i = 0; i < items.length; i++) ...[
+                                      _ingredientRow(
+                                        context,
+                                        i + 1,
+                                        items[i],
+                                      ),
+                                      if (i < items.length - 1)
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                          child: Divider(height: 1),
+                                        ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
                           );
                         },
                       ),

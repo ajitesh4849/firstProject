@@ -171,7 +171,8 @@ public class PackagedFoodService {
                 disclaimer,
                 true,
                 source,
-                canSaveToCatalog
+                canSaveToCatalog,
+                analysis.ingredients()
         );
     }
 

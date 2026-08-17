@@ -21,6 +21,30 @@ class PackagedRiskFlag {
   }
 }
 
+class PackagedIngredientMark {
+  const PackagedIngredientMark({
+    required this.text,
+    required this.tag,
+    this.reason,
+  });
+
+  final String text;
+  /// UNHEALTHY | HEALTHIER | NEUTRAL
+  final String tag;
+  final String? reason;
+
+  bool get isUnhealthy => tag.toUpperCase() == 'UNHEALTHY';
+  bool get isHealthier => tag.toUpperCase() == 'HEALTHIER';
+
+  factory PackagedIngredientMark.fromJson(Map<String, dynamic> json) {
+    return PackagedIngredientMark(
+      text: json['text']?.toString() ?? '',
+      tag: json['tag']?.toString() ?? 'NEUTRAL',
+      reason: json['reason']?.toString(),
+    );
+  }
+}
+
 class PackagedFoodAnalysis {
   const PackagedFoodAnalysis({
     required this.barcode,
@@ -39,6 +63,7 @@ class PackagedFoodAnalysis {
     this.energyKcalPer100g,
     this.source,
     this.canSaveToCatalog = false,
+    this.ingredients = const [],
   });
 
   final String barcode;
@@ -57,6 +82,7 @@ class PackagedFoodAnalysis {
   final bool found;
   final String? source;
   final bool canSaveToCatalog;
+  final List<PackagedIngredientMark> ingredients;
 
   bool get isFromLabelPhoto => source == 'LABEL_PHOTO';
   bool get isFromCatalog => source == 'SEED';
@@ -78,6 +104,7 @@ class PackagedFoodAnalysis {
     bool? found,
     String? source,
     bool? canSaveToCatalog,
+    List<PackagedIngredientMark>? ingredients,
   }) {
     return PackagedFoodAnalysis(
       barcode: barcode ?? this.barcode,
@@ -96,12 +123,14 @@ class PackagedFoodAnalysis {
       found: found ?? this.found,
       source: source ?? this.source,
       canSaveToCatalog: canSaveToCatalog ?? this.canSaveToCatalog,
+      ingredients: ingredients ?? this.ingredients,
     );
   }
 
   factory PackagedFoodAnalysis.fromJson(Map<String, dynamic> json) {
     final flagsJson = json['flags'] as List<dynamic>? ?? [];
     final swapsJson = json['healthierSwaps'] as List<dynamic>? ?? [];
+    final ingredientsJson = json['ingredients'] as List<dynamic>? ?? [];
     return PackagedFoodAnalysis(
       barcode: json['barcode']?.toString() ?? '',
       productName: json['productName']?.toString() ?? 'Unknown product',
@@ -123,6 +152,10 @@ class PackagedFoodAnalysis {
       found: json['found'] as bool? ?? true,
       source: json['source']?.toString(),
       canSaveToCatalog: json['canSaveToCatalog'] as bool? ?? false,
+      ingredients: ingredientsJson
+          .whereType<Map<String, dynamic>>()
+          .map(PackagedIngredientMark.fromJson)
+          .toList(),
     );
   }
 }

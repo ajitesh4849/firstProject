@@ -20,6 +20,7 @@ public record PackagedFoodResponse(
         /** SEED | OPEN_FOOD_FACTS | LABEL_PHOTO */
         String source,
         /** True when result can be saved into the local catalog (valid barcode). */
-        boolean canSaveToCatalog
+        boolean canSaveToCatalog,
+        List<PackagedIngredientMarkDto> ingredients
 ) {
 }
