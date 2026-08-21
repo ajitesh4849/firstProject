@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(context, AppRoutes.scan);
                               },
                             )
-                          else
+                          else ...[
                             ..._meals.map(
                               (meal) => Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
@@ -212,14 +212,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 18),
-                          PrimaryButton(
-                            label: 'Scan Food',
-                            icon: Icons.camera_alt_outlined,
-                            onPressed: () {
-                              Navigator.pushNamed(context, AppRoutes.scan);
-                            },
-                          ),
+                            const SizedBox(height: 18),
+                            PrimaryButton(
+                              label: 'Scan Food',
+                              icon: Icons.camera_alt_outlined,
+                              onPressed: () {
+                                Navigator.pushNamed(context, AppRoutes.scan);
+                              },
+                            ),
+                          ],
                         ],
                       ),
                     ),
