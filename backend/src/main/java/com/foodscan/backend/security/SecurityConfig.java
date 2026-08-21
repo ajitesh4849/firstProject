@@ -1,8 +1,11 @@
 package com.foodscan.backend.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.foodscan.backend.dto.ApiErrorResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -23,7 +26,8 @@ public class SecurityConfig {
             HttpSecurity http,
             RateLimitFilter rateLimitFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            DaoAuthenticationProvider authenticationProvider
+            DaoAuthenticationProvider authenticationProvider,
+            ObjectMapper objectMapper
     ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -33,6 +37,32 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/health", "/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/signup").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(
+                                    response.getOutputStream(),
+                                    new ApiErrorResponse(
+                                            "UNAUTHORIZED",
+                                            "Please log in again",
+                                            null
+                                    )
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(403);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(
+                                    response.getOutputStream(),
+                                    new ApiErrorResponse(
+                                            "FORBIDDEN",
+                                            "You do not have access to this resource",
+                                            null
+                                    )
+                            );
+                        })
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

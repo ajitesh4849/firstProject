@@ -5,7 +5,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "See how FoodScan turns a food photo into estimated nutrition and daily tracking in four steps.",
+    "See how FoodScan scans meal photos for calories and packaged barcodes for ingredient awareness.",
 };
 
 export default function HowItWorksPage() {
@@ -20,9 +20,9 @@ export default function HowItWorksPage() {
             How FoodScan works on mobile
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
-            The full scan-to-log journey lives in the Flutter app. This page
-            explains the flow so you know what to expect before you open the
-            camera.
+            The full experience lives in the Flutter app. This page explains
+            meal photo tracking and packaged barcode checks so you know what to
+            expect before you open the camera.
           </p>
         </div>
       </section>

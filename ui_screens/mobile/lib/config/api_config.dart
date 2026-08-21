@@ -14,4 +14,5 @@ class ApiConfig {
   }
 
   static const Duration timeout = Duration(seconds: 25);
+  static const Duration connectTimeout = Duration(seconds: 8);
 }

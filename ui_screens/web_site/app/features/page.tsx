@@ -5,39 +5,39 @@ import { FeatureCard } from "@/components/FeatureCard";
 export const metadata: Metadata = {
   title: "Features",
   description:
-    "Explore FoodScan features: AI food scanner, calorie estimation, macros, daily tracking, history, and mobile experience.",
+    "Explore FoodScan features: meal photo scan, packaged barcodes, ingredient marks, calorie goals, macros, and mobile tracking.",
 };
 
 const features = [
   {
-    title: "AI Food Scanner",
+    title: "Meal photo scanner",
     description:
       "Capture a meal and get a suggested dish name with confidence so you can confirm or edit.",
   },
   {
-    title: "Calorie Estimation",
+    title: "Ingredient awareness",
     description:
-      "Translate portion size into estimated calories — clearly labeled as approximate.",
+      "For common dish types, see typical preparation tips — why it may be heavy and what to prefer.",
   },
   {
-    title: "Protein / Carbs / Fat",
+    title: "Calorie & macro estimates",
     description:
-      "Review macro estimates for each meal before adding it to your day.",
+      "Translate portion size into estimated calories, protein, carbs, and fat — clearly approximate.",
   },
   {
-    title: "Daily Tracking",
+    title: "Packaged barcode check",
     description:
-      "See today’s intake against your goal with a simple progress view.",
+      "Look up packs by barcode. If not found, photograph the ingredients panel as a fallback.",
   },
   {
-    title: "History & Insights",
+    title: "Watch / Prefer ingredient marks",
     description:
-      "Look back across recent days and weekly averages to spot patterns.",
+      "Highlight additives and refined signals to watch, and whole-food style ingredients to prefer.",
   },
   {
-    title: "Mobile Experience",
+    title: "Daily goal & history",
     description:
-      "Designed for Android and iOS — scan where you eat, not on a desktop dashboard.",
+      "Profile-based calorie target, today’s progress, and recent history on Android and iOS.",
   },
 ];
 
@@ -50,11 +50,11 @@ export default function FeaturesPage() {
             Features
           </p>
           <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold tracking-tight md:text-5xl">
-            Built around the scan journey
+            Built around meal and package scanning
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
-            FoodScan focuses on a clear mobile loop: scan, confirm, portion,
-            estimate, and track.
+            FoodScan focuses on a clear mobile loop: scan a meal or pack,
+            understand what you’re looking at, and track what you choose to log.
           </p>
         </div>
       </section>

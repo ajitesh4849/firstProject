@@ -25,8 +25,33 @@ Future<void> main() async {
   runApp(const FoodScanApp());
 }
 
-class FoodScanApp extends StatelessWidget {
+class FoodScanApp extends StatefulWidget {
   const FoodScanApp({super.key});
+
+  @override
+  State<FoodScanApp> createState() => _FoodScanAppState();
+}
+
+class _FoodScanAppState extends State<FoodScanApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // After background / Wi‑Fi changes, drop stale sockets so the next API call reconnects.
+    if (state == AppLifecycleState.resumed) {
+      apiClient.resetHttpClient();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -27,8 +27,9 @@ export default function AboutPage() {
           <article>
             <h2 className="font-display text-2xl font-semibold">Mission</h2>
             <p className="mt-3 text-base leading-relaxed text-muted">
-              Help people see what they eat — quickly — by turning a meal photo
-              into an understandable estimate they can confirm and track.
+              Help people see what they eat — quickly — whether that’s a plated
+              meal estimate or a packaged label check they can understand and
+              track.
             </p>
           </article>
           <article>
@@ -42,9 +43,9 @@ export default function AboutPage() {
           <article>
             <h2 className="font-display text-2xl font-semibold">Why FoodScan</h2>
             <p className="mt-3 text-base leading-relaxed text-muted">
-              Manual logging is slow. FoodScan focuses on a mobile scan flow —
-              identify, portion, estimate, add to today — so tracking fits real
-              meals instead of forcing a spreadsheet mindset.
+              Manual logging is slow. FoodScan focuses on mobile scanning —
+              meals for calories, packs for ingredient awareness — so tracking
+              fits real life instead of a spreadsheet mindset.
             </p>
           </article>
           <article>

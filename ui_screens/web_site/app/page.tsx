@@ -7,20 +7,24 @@ import { TrustDisclaimer } from "@/components/TrustDisclaimer";
 
 const homeFeatures = [
   {
-    title: "AI Food Scanner",
-    description: "Identify dishes from a photo with a confidence score you can confirm or edit.",
+    title: "Meal photo scan",
+    description:
+      "Identify dishes from a photo, confirm or edit the name, and get portion-based calorie estimates.",
   },
   {
-    title: "Calorie Estimation",
-    description: "Get estimated calories based on the portion you select.",
+    title: "Packaged barcode check",
+    description:
+      "Scan a barcode for ingredient flags. If it’s missing, photograph the ingredients label instead.",
   },
   {
-    title: "Protein / Carbs / Fat",
-    description: "See macro breakdowns alongside calories for each logged meal.",
+    title: "Watch / Prefer marks",
+    description:
+      "See soft labels on ingredients to limit vs prefer — rule-based and educational, not medical advice.",
   },
   {
-    title: "Daily Tracking",
-    description: "Watch progress toward your daily calorie goal on Home / Today.",
+    title: "Daily calorie goal",
+    description:
+      "Profile-based daily target with Home progress for today’s logged meals.",
   },
 ];
 
@@ -38,7 +42,7 @@ export default function HomePage() {
             id="features-heading"
             className="mt-3 max-w-2xl font-display text-3xl font-semibold tracking-tight md:text-4xl"
           >
-            Everything you need to log a meal from a photo
+            Meals and packs — awareness on your phone
           </h2>
           <div className="mt-12 grid gap-10 sm:grid-cols-2">
             {homeFeatures.map((feature) => (

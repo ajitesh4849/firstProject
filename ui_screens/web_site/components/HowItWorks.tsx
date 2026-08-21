@@ -1,24 +1,51 @@
-const steps = [
+const mealSteps = [
   {
     number: "01",
-    title: "Scan food",
-    description: "Point your phone camera at your meal or choose a photo.",
+    title: "Scan a meal photo",
+    description: "Point your phone at a plated meal or pick a photo from your library.",
   },
   {
     number: "02",
-    title: "AI identifies the dish",
-    description: "FoodScan suggests a dish name with a confidence score.",
+    title: "Confirm the dish",
+    description:
+      "AI suggests a name with confidence. Edit if needed and see dish-style awareness tips.",
   },
   {
     number: "03",
-    title: "Estimate portion and nutrition",
+    title: "Estimate nutrition",
     description:
-      "Pick a portion size and review estimated calories, protein, carbs, and fat.",
+      "Pick a portion and review estimated calories, protein, carbs, and fat.",
   },
   {
     number: "04",
-    title: "Track daily intake",
-    description: "Add the meal to today and review history as you go.",
+    title: "Track your day",
+    description: "Add the meal to today and review history against your calorie goal.",
+  },
+];
+
+const packagedSteps = [
+  {
+    number: "01",
+    title: "Scan the barcode",
+    description: "Look up the pack in product data (or your FoodScan catalog).",
+  },
+  {
+    number: "02",
+    title: "Fallback photo if needed",
+    description:
+      "If the barcode isn’t found, photograph the ingredients list for a label read.",
+  },
+  {
+    number: "03",
+    title: "See watch / prefer marks",
+    description:
+      "Rule-based flags highlight ingredients to limit vs prefer — educational only.",
+  },
+  {
+    number: "04",
+    title: "Save for next time",
+    description:
+      "Optionally add the product to your local catalog so the next scan is faster.",
   },
 ];
 
@@ -37,23 +64,54 @@ export function HowItWorks({ compact = false }: HowItWorksProps) {
           id="how-heading"
           className="mt-3 max-w-2xl font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl"
         >
-          From photo to daily log in four steps
+          Two ways to scan on mobile
         </h2>
-        <ol className="mt-12 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step) => (
-            <li key={step.number}>
-              <p className="font-display text-4xl font-semibold text-primary/25">
-                {step.number}
-              </p>
-              <h3 className="mt-3 font-display text-xl font-semibold">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                {step.description}
-              </p>
-            </li>
-          ))}
-        </ol>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
+          Meal photos for calorie tracking. Packaged barcodes for ingredient
+          awareness when you shop or snack.
+        </p>
+
+        <div className="mt-14">
+          <h3 className="font-display text-xl font-semibold text-foreground">
+            Meal photo
+          </h3>
+          <ol className="mt-8 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+            {mealSteps.map((step) => (
+              <li key={step.number}>
+                <p className="font-display text-4xl font-semibold text-primary/25">
+                  {step.number}
+                </p>
+                <h4 className="mt-3 font-display text-lg font-semibold">
+                  {step.title}
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {step.description}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-16 border-t border-border pt-14">
+          <h3 className="font-display text-xl font-semibold text-foreground">
+            Packaged food
+          </h3>
+          <ol className="mt-8 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+            {packagedSteps.map((step) => (
+              <li key={step.number}>
+                <p className="font-display text-4xl font-semibold text-accent/35">
+                  {step.number}
+                </p>
+                <h4 className="mt-3 font-display text-lg font-semibold">
+                  {step.title}
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {step.description}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );

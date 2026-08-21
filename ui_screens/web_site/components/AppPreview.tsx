@@ -15,9 +15,9 @@ export function AppPreview() {
             Built for the phone in your hand
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            Scan, confirm, portion, and log — without leaving a desktop
-            dashboard. FoodScan is designed as a mobile-first experience for
-            Android and iOS.
+            Scan meals for calories, check packaged barcodes for ingredient
+            marks, and log your day — without a desktop dashboard. FoodScan is
+            designed as a mobile-first experience for Android and iOS.
           </p>
         </div>
 
@@ -49,8 +49,8 @@ export function AppPreview() {
                     <span className="font-semibold text-primary-dark">680 kcal</span>
                   </li>
                   <li className="flex justify-between border-t border-border pt-2">
-                    <span>Dinner</span>
-                    <span className="font-semibold text-primary-dark">720 kcal</span>
+                    <span>Packaged check</span>
+                    <span className="font-semibold text-accent">Watch · Prefer</span>
                   </li>
                 </ul>
               </div>

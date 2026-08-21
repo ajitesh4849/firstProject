@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } on ApiException catch (error) {
-      if (error.statusCode == 401) {
+      if (error.statusCode == 401 || error.statusCode == 403) {
         await apiClient.clearSession();
       }
       if (!mounted) return;

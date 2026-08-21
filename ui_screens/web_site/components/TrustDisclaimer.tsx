@@ -12,8 +12,10 @@ export function TrustDisclaimer() {
             Responsible estimates
           </h2>
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-muted">
-            {siteConfig.disclaimer} FoodScan helps you stay aware of intake —
-            it is not a medical device and does not provide medical advice.
+            {siteConfig.disclaimer} FoodScan helps you stay aware of meals and
+            packaged labels — it is not a medical device and does not provide
+            medical advice. Ingredient marks are rule-based educational cues,
+            not lab analysis.
           </p>
         </div>
       </div>

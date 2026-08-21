@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,15 +14,38 @@ import '../routes/app_routes.dart';
 import 'api_exception.dart';
 
 class ApiClient {
-  ApiClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
+  ApiClient({http.Client? httpClient}) : _http = httpClient ?? _createHttpClient();
 
   static const _tokenKey = 'foodscan_access_token';
 
-  final http.Client _http;
+  http.Client _http;
   String? _accessToken;
   bool _handlingUnauthorized = false;
+  bool _resettingClient = false;
 
   String? get accessToken => _accessToken;
+
+  /// Fresh HttpClient so dead keep-alive sockets (after Wi‑Fi drops) are discarded.
+  static http.Client _createHttpClient() {
+    final inner = HttpClient()
+      ..connectionTimeout = ApiConfig.connectTimeout
+      ..idleTimeout = const Duration(seconds: 5)
+      ..autoUncompress = true;
+    return IOClient(inner);
+  }
+
+  /// Call after network failures so the next request opens a new connection.
+  void resetHttpClient() {
+    if (_resettingClient) return;
+    _resettingClient = true;
+    try {
+      _http.close();
+    } catch (_) {
+      // ignore close errors on already-broken clients
+    }
+    _http = _createHttpClient();
+    _resettingClient = false;
+  }
 
   Future<void> loadSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -49,39 +75,68 @@ class ApiClient {
     return headers;
   }
 
-  Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _http
-        .get(_uri(path), headers: _headers(json: false))
-        .timeout(ApiConfig.timeout);
-    return _decode(response);
+  bool _isTransientNetworkError(Object error) {
+    if (error is TimeoutException) return true;
+    if (error is SocketException) return true;
+    if (error is HttpException) return true;
+    if (error is http.ClientException) return true;
+    final message = error.toString().toLowerCase();
+    return message.contains('timeout') ||
+        message.contains('connection') ||
+        message.contains('network') ||
+        message.contains('socket');
+  }
+
+  Future<T> _withNetworkRetry<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (error) {
+      if (!_isTransientNetworkError(error)) rethrow;
+      // Wi‑Fi often returns while the old keep-alive socket is still dead.
+      resetHttpClient();
+      return await action();
+    }
+  }
+
+  Future<Map<String, dynamic>> getJson(String path) {
+    return _withNetworkRetry(() async {
+      final response = await _http
+          .get(_uri(path), headers: _headers(json: false))
+          .timeout(ApiConfig.timeout);
+      return _decode(response);
+    });
   }
 
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, dynamic>? body,
-  }) async {
-    final response = await _http
-        .post(
-          _uri(path),
-          headers: _headers(),
-          body: jsonEncode(body ?? {}),
-        )
-        .timeout(ApiConfig.timeout);
-    return _decode(response);
+  }) {
+    return _withNetworkRetry(() async {
+      final response = await _http
+          .post(
+            _uri(path),
+            headers: _headers(),
+            body: jsonEncode(body ?? {}),
+          )
+          .timeout(ApiConfig.timeout);
+      return _decode(response);
+    });
   }
 
   Future<Map<String, dynamic>> putJson(
     String path, {
     required Map<String, dynamic> body,
-  }) async {
-    final response = await _http
-        .put(
-          _uri(path),
-          headers: _headers(),
-          body: jsonEncode(body),
-        )
-        .timeout(ApiConfig.timeout);
-    return _decode(response);
+  }) {
+    return _withNetworkRetry(() async {
+      final response = await _http
+          .put(
+            _uri(path),
+            headers: _headers(),
+            body: jsonEncode(body ?? {}),
+          )
+          .timeout(ApiConfig.timeout);
+      return _decode(response);
+    });
   }
 
   Future<Map<String, dynamic>> postMultipart({
@@ -91,26 +146,28 @@ class ApiClient {
     required String filename,
     String contentType = 'image/jpeg',
     Map<String, String>? fields,
-  }) async {
-    final request = http.MultipartRequest('POST', _uri(path));
-    if (_accessToken != null && _accessToken!.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $_accessToken';
-    }
-    if (fields != null) {
-      request.fields.addAll(fields);
-    }
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        fieldName,
-        bytes,
-        filename: filename,
-        contentType: MediaType('image', 'jpeg'),
-      ),
-    );
+  }) {
+    return _withNetworkRetry(() async {
+      final request = http.MultipartRequest('POST', _uri(path));
+      if (_accessToken != null && _accessToken!.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $_accessToken';
+      }
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          bytes,
+          filename: filename,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
 
-    final streamed = await request.send().timeout(ApiConfig.timeout);
-    final response = await http.Response.fromStream(streamed);
-    return _decode(response);
+      final streamed = await _http.send(request).timeout(ApiConfig.timeout);
+      final response = await http.Response.fromStream(streamed);
+      return _decode(response);
+    });
   }
 
   Future<Map<String, dynamic>> _decode(http.Response response) async {
@@ -126,7 +183,7 @@ class ApiClient {
       return body ?? <String, dynamic>{};
     }
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
       await _handleUnauthorized();
     }
 
@@ -140,7 +197,9 @@ class ApiClient {
         ? detailMessage!
         : body?['message']?.toString() ??
             body?['detail']?.toString() ??
-            'Request failed (${response.statusCode})';
+            (response.statusCode == 401 || response.statusCode == 403
+                ? 'Please log in again'
+                : 'Request failed (${response.statusCode})');
     throw ApiException(message, statusCode: response.statusCode);
   }
 

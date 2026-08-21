@@ -69,21 +69,27 @@ Sections:
 
 ## How It Works
 
-Four steps:
+**Meal photo**
 1. Scan food
-2. AI identifies the dish
+2. AI identifies the dish (+ awareness tips)
 3. Estimate portion and nutrition
 4. Track daily intake
+
+**Packaged food**
+1. Scan barcode
+2. Fallback: photograph ingredients if not found
+3. Watch / Prefer ingredient marks + flags
+4. Optional save to local catalog
 
 ## Features
 
 Cards:
-- AI Food Scanner
-- Calorie Estimation
-- Protein / Carbs / Fat
-- Daily Tracking
-- History & Insights
-- Mobile Experience
+- Meal photo scanner
+- Ingredient awareness (dish tips)
+- Calorie & macro estimates
+- Packaged barcode check
+- Watch / Prefer ingredient marks
+- Daily goal & history / mobile experience
 
 ## Pricing
 

@@ -29,9 +29,9 @@ export function Hero() {
           {siteConfig.tagline}
         </h1>
         <p className="animate-fade-up-delay-2 mt-6 max-w-xl text-base leading-relaxed text-white/75 md:text-lg">
-          AI-powered food calorie estimation on your phone. Point the camera at
-          your meal, confirm the dish, choose a portion, and track daily intake
-          with clear estimate disclaimers.
+          Scan a plated meal for calorie estimates, or scan a packaged barcode
+          for ingredient watch/prefer marks. Confirm, track your day, and stay
+          aware — with clear estimate disclaimers, not medical claims.
         </p>
         <div className="animate-fade-up-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
