@@ -1,4 +1,5 @@
 import '../models/daily_summary.dart';
+import '../models/food_intelligence.dart';
 import '../models/food_item.dart';
 import '../models/ingredient_awareness.dart';
 import '../models/meal.dart';
@@ -76,6 +77,7 @@ class FoodApiService {
       '/api/v1/scans/$scanId/nutrition',
       body: {'portionGrams': portionGrams},
     );
+    final intelligenceJson = body['intelligence'] as Map<String, dynamic>?;
     return NutritionInfo(
       foodName: body['foodName']?.toString() ?? '',
       portionGrams: (body['portionGrams'] as num?)?.toInt() ?? portionGrams,
@@ -83,7 +85,13 @@ class FoodApiService {
       proteinGrams: (body['proteinGrams'] as num?)?.toDouble() ?? 0,
       carbsGrams: (body['carbsGrams'] as num?)?.toDouble() ?? 0,
       fatGrams: (body['fatGrams'] as num?)?.toDouble() ?? 0,
+      fibreGrams: (body['fibreGrams'] as num?)?.toDouble() ?? 0,
+      sugarGrams: (body['sugarGrams'] as num?)?.toDouble() ?? 0,
+      sodiumMg: (body['sodiumMg'] as num?)?.toDouble() ?? 0,
       estimated: body['estimated'] as bool? ?? true,
+      intelligence: intelligenceJson == null
+          ? null
+          : FoodIntelligence.fromJson(intelligenceJson),
     );
   }
 
@@ -149,11 +157,13 @@ class FoodApiService {
         'proteinGrams': nutrition.proteinGrams,
         'carbsGrams': nutrition.carbsGrams,
         'fatGrams': nutrition.fatGrams,
+        'fibreGrams': nutrition.fibreGrams,
+        'sugarGrams': nutrition.sugarGrams,
       },
     );
   }
 
-  Future<({int consumedKcal, int goalKcal, List<Meal> meals})> fetchToday() async {
+  Future<TodaySummary> fetchToday() async {
     final body = await _client.getJson('/api/v1/me/today');
     final mealsJson = body['meals'] as List<dynamic>? ?? [];
     final meals = mealsJson.map((item) {
@@ -164,9 +174,21 @@ class FoodApiService {
       );
     }).toList();
 
-    return (
+    return TodaySummary(
       consumedKcal: (body['consumedKcal'] as num?)?.toInt() ?? 0,
       goalKcal: (body['goalKcal'] as num?)?.toInt() ?? 2200,
+      consumedProteinGrams:
+          (body['consumedProteinGrams'] as num?)?.toDouble() ?? 0,
+      goalProteinGrams: (body['goalProteinGrams'] as num?)?.toDouble() ?? 100,
+      consumedCarbsGrams: (body['consumedCarbsGrams'] as num?)?.toDouble() ?? 0,
+      goalCarbsGrams: (body['goalCarbsGrams'] as num?)?.toDouble() ?? 250,
+      consumedFatGrams: (body['consumedFatGrams'] as num?)?.toDouble() ?? 0,
+      goalFatGrams: (body['goalFatGrams'] as num?)?.toDouble() ?? 70,
+      consumedFibreGrams: (body['consumedFibreGrams'] as num?)?.toDouble() ?? 0,
+      goalFibreGrams: (body['goalFibreGrams'] as num?)?.toDouble() ?? 30,
+      consumedSugarGrams: (body['consumedSugarGrams'] as num?)?.toDouble() ?? 0,
+      goalSugarGrams: (body['goalSugarGrams'] as num?)?.toDouble() ?? 45,
+      goal: body['goal']?.toString() ?? 'LOSE_WEIGHT',
       meals: meals,
     );
   }
@@ -303,6 +325,40 @@ class FoodApiService {
         return 'VERY_ACTIVE';
     }
   }
+}
+
+class TodaySummary {
+  const TodaySummary({
+    required this.consumedKcal,
+    required this.goalKcal,
+    required this.consumedProteinGrams,
+    required this.goalProteinGrams,
+    required this.consumedCarbsGrams,
+    required this.goalCarbsGrams,
+    required this.consumedFatGrams,
+    required this.goalFatGrams,
+    required this.consumedFibreGrams,
+    required this.goalFibreGrams,
+    required this.consumedSugarGrams,
+    required this.goalSugarGrams,
+    required this.goal,
+    required this.meals,
+  });
+
+  final int consumedKcal;
+  final int goalKcal;
+  final double consumedProteinGrams;
+  final double goalProteinGrams;
+  final double consumedCarbsGrams;
+  final double goalCarbsGrams;
+  final double consumedFatGrams;
+  final double goalFatGrams;
+  final double consumedFibreGrams;
+  final double goalFibreGrams;
+  final double consumedSugarGrams;
+  final double goalSugarGrams;
+  final String goal;
+  final List<Meal> meals;
 }
 
 final foodApi = FoodApiService();

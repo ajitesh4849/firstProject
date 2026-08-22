@@ -4,15 +4,19 @@ import com.foodscan.backend.awareness.IngredientAwarenessService;
 import com.foodscan.backend.client.AiServiceClient;
 import com.foodscan.backend.dto.AiPredictResponse;
 import com.foodscan.backend.dto.FoodDto;
+import com.foodscan.backend.dto.FoodIntelligenceDto;
 import com.foodscan.backend.dto.NutritionRequest;
 import com.foodscan.backend.dto.NutritionResponse;
 import com.foodscan.backend.dto.ScanResponse;
 import com.foodscan.backend.entity.FoodScan;
+import com.foodscan.backend.entity.UserAccount;
 import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
+import com.foodscan.backend.intelligence.FoodIntelligenceService;
 import com.foodscan.backend.nutrition.MacroProfile;
 import com.foodscan.backend.nutrition.NutritionEstimator;
 import com.foodscan.backend.repository.FoodScanRepository;
+import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,21 +30,27 @@ public class ScanService {
     private final AiServiceClient aiServiceClient;
     private final FoodScanRepository foodScanRepository;
     private final CurrentUserService currentUserService;
+    private final UserAccountRepository userAccountRepository;
     private final NutritionEstimator nutritionEstimator;
     private final IngredientAwarenessService ingredientAwarenessService;
+    private final FoodIntelligenceService foodIntelligenceService;
 
     public ScanService(
             AiServiceClient aiServiceClient,
             FoodScanRepository foodScanRepository,
             CurrentUserService currentUserService,
+            UserAccountRepository userAccountRepository,
             NutritionEstimator nutritionEstimator,
-            IngredientAwarenessService ingredientAwarenessService
+            IngredientAwarenessService ingredientAwarenessService,
+            FoodIntelligenceService foodIntelligenceService
     ) {
         this.aiServiceClient = aiServiceClient;
         this.foodScanRepository = foodScanRepository;
         this.currentUserService = currentUserService;
+        this.userAccountRepository = userAccountRepository;
         this.nutritionEstimator = nutritionEstimator;
         this.ingredientAwarenessService = ingredientAwarenessService;
+        this.foodIntelligenceService = foodIntelligenceService;
     }
 
     @Transactional
@@ -85,14 +95,43 @@ public class ScanService {
         MacroProfile profile = nutritionEstimator.estimateFor(scan.getFoodName());
         double factor = request.portionGrams() / 100.0;
 
+        int calories = (int) Math.round(profile.caloriesPer100g() * factor);
+        double protein = round1(profile.proteinPer100g() * factor);
+        double carbs = round1(profile.carbsPer100g() * factor);
+        double fat = round1(profile.fatPer100g() * factor);
+        double fibre = round1(profile.fibrePer100g() * factor);
+        double sugar = round1(profile.sugarPer100g() * factor);
+        double sodium = round1(profile.sodiumMgPer100g() * factor);
+
+        String goal = userAccountRepository.findById(userId)
+                .map(UserAccount::getGoal)
+                .orElse("LOSE_WEIGHT");
+
+        FoodIntelligenceDto intelligence = foodIntelligenceService.forMeal(
+                scan.getFoodName(),
+                calories,
+                protein,
+                carbs,
+                fat,
+                fibre,
+                sugar,
+                sodium,
+                request.portionGrams(),
+                goal
+        );
+
         return new NutritionResponse(
                 scan.getFoodName(),
                 request.portionGrams(),
-                (int) Math.round(profile.caloriesPer100g() * factor),
-                round1(profile.proteinPer100g() * factor),
-                round1(profile.carbsPer100g() * factor),
-                round1(profile.fatPer100g() * factor),
-                true
+                calories,
+                protein,
+                carbs,
+                fat,
+                fibre,
+                sugar,
+                sodium,
+                true,
+                intelligence
         );
     }
 

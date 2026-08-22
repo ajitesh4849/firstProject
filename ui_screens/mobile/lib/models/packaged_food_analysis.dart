@@ -1,3 +1,5 @@
+import 'food_intelligence.dart';
+
 class PackagedRiskFlag {
   const PackagedRiskFlag({
     required this.code,
@@ -61,9 +63,16 @@ class PackagedFoodAnalysis {
     this.sugarPer100g,
     this.saltPer100g,
     this.energyKcalPer100g,
+    this.proteinPer100g,
+    this.carbsPer100g,
+    this.fatPer100g,
+    this.fibrePer100g,
+    this.saturatedFatPer100g,
+    this.sodiumMgPer100g,
     this.source,
     this.canSaveToCatalog = false,
     this.ingredients = const [],
+    this.intelligence,
   });
 
   final String barcode;
@@ -74,6 +83,12 @@ class PackagedFoodAnalysis {
   final double? sugarPer100g;
   final double? saltPer100g;
   final double? energyKcalPer100g;
+  final double? proteinPer100g;
+  final double? carbsPer100g;
+  final double? fatPer100g;
+  final double? fibrePer100g;
+  final double? saturatedFatPer100g;
+  final double? sodiumMgPer100g;
   final String score;
   final int riskCount;
   final List<PackagedRiskFlag> flags;
@@ -83,6 +98,7 @@ class PackagedFoodAnalysis {
   final String? source;
   final bool canSaveToCatalog;
   final List<PackagedIngredientMark> ingredients;
+  final FoodIntelligence? intelligence;
 
   bool get isFromLabelPhoto => source == 'LABEL_PHOTO';
   bool get isFromCatalog => source == 'SEED';
@@ -96,6 +112,12 @@ class PackagedFoodAnalysis {
     double? sugarPer100g,
     double? saltPer100g,
     double? energyKcalPer100g,
+    double? proteinPer100g,
+    double? carbsPer100g,
+    double? fatPer100g,
+    double? fibrePer100g,
+    double? saturatedFatPer100g,
+    double? sodiumMgPer100g,
     String? score,
     int? riskCount,
     List<PackagedRiskFlag>? flags,
@@ -105,6 +127,7 @@ class PackagedFoodAnalysis {
     String? source,
     bool? canSaveToCatalog,
     List<PackagedIngredientMark>? ingredients,
+    FoodIntelligence? intelligence,
   }) {
     return PackagedFoodAnalysis(
       barcode: barcode ?? this.barcode,
@@ -115,6 +138,12 @@ class PackagedFoodAnalysis {
       sugarPer100g: sugarPer100g ?? this.sugarPer100g,
       saltPer100g: saltPer100g ?? this.saltPer100g,
       energyKcalPer100g: energyKcalPer100g ?? this.energyKcalPer100g,
+      proteinPer100g: proteinPer100g ?? this.proteinPer100g,
+      carbsPer100g: carbsPer100g ?? this.carbsPer100g,
+      fatPer100g: fatPer100g ?? this.fatPer100g,
+      fibrePer100g: fibrePer100g ?? this.fibrePer100g,
+      saturatedFatPer100g: saturatedFatPer100g ?? this.saturatedFatPer100g,
+      sodiumMgPer100g: sodiumMgPer100g ?? this.sodiumMgPer100g,
       score: score ?? this.score,
       riskCount: riskCount ?? this.riskCount,
       flags: flags ?? this.flags,
@@ -124,6 +153,7 @@ class PackagedFoodAnalysis {
       source: source ?? this.source,
       canSaveToCatalog: canSaveToCatalog ?? this.canSaveToCatalog,
       ingredients: ingredients ?? this.ingredients,
+      intelligence: intelligence ?? this.intelligence,
     );
   }
 
@@ -131,6 +161,7 @@ class PackagedFoodAnalysis {
     final flagsJson = json['flags'] as List<dynamic>? ?? [];
     final swapsJson = json['healthierSwaps'] as List<dynamic>? ?? [];
     final ingredientsJson = json['ingredients'] as List<dynamic>? ?? [];
+    final intelligenceJson = json['intelligence'] as Map<String, dynamic>?;
     return PackagedFoodAnalysis(
       barcode: json['barcode']?.toString() ?? '',
       productName: json['productName']?.toString() ?? 'Unknown product',
@@ -140,6 +171,12 @@ class PackagedFoodAnalysis {
       sugarPer100g: (json['sugarPer100g'] as num?)?.toDouble(),
       saltPer100g: (json['saltPer100g'] as num?)?.toDouble(),
       energyKcalPer100g: (json['energyKcalPer100g'] as num?)?.toDouble(),
+      proteinPer100g: (json['proteinPer100g'] as num?)?.toDouble(),
+      carbsPer100g: (json['carbsPer100g'] as num?)?.toDouble(),
+      fatPer100g: (json['fatPer100g'] as num?)?.toDouble(),
+      fibrePer100g: (json['fibrePer100g'] as num?)?.toDouble(),
+      saturatedFatPer100g: (json['saturatedFatPer100g'] as num?)?.toDouble(),
+      sodiumMgPer100g: (json['sodiumMgPer100g'] as num?)?.toDouble(),
       score: json['score']?.toString() ?? 'OK',
       riskCount: (json['riskCount'] as num?)?.toInt() ?? 0,
       flags: flagsJson
@@ -156,6 +193,10 @@ class PackagedFoodAnalysis {
           .whereType<Map<String, dynamic>>()
           .map(PackagedIngredientMark.fromJson)
           .toList(),
+      intelligence: intelligenceJson == null
+          ? null
+          : FoodIntelligence.fromJson(intelligenceJson),
     );
   }
 }
+

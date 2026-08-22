@@ -5,8 +5,10 @@ import com.foodscan.backend.client.AiServiceClient;
 import com.foodscan.backend.dto.AiPredictResponse;
 import com.foodscan.backend.dto.ScanResponse;
 import com.foodscan.backend.entity.FoodScan;
+import com.foodscan.backend.intelligence.FoodIntelligenceService;
 import com.foodscan.backend.nutrition.NutritionEstimator;
 import com.foodscan.backend.repository.FoodScanRepository;
+import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,12 @@ class ScanServiceTest {
     @Mock
     private CurrentUserService currentUserService;
 
+    @Mock
+    private UserAccountRepository userAccountRepository;
+
+    @Mock
+    private NutritionEstimator nutritionEstimator;
+
     private ScanService scanService;
 
     @BeforeEach
@@ -42,8 +50,10 @@ class ScanServiceTest {
                 aiServiceClient,
                 foodScanRepository,
                 currentUserService,
-                new NutritionEstimator(),
-                new IngredientAwarenessService()
+                userAccountRepository,
+                nutritionEstimator,
+                new IngredientAwarenessService(),
+                new FoodIntelligenceService()
         );
     }
 

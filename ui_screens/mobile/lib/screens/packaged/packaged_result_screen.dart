@@ -6,6 +6,7 @@ import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/food_intelligence_card.dart';
 import '../../widgets/primary_button.dart';
 
 class PackagedResultScreen extends StatefulWidget {
@@ -327,16 +328,26 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                           ),
                           if (_analysis.energyKcalPer100g != null ||
                               _analysis.sugarPer100g != null ||
-                              _analysis.saltPer100g != null) ...[
+                              _analysis.saltPer100g != null ||
+                              _analysis.proteinPer100g != null ||
+                              _analysis.fibrePer100g != null) ...[
                             const SizedBox(height: 14),
                             Text(
                               [
                                 if (_analysis.energyKcalPer100g != null)
                                   '${_analysis.energyKcalPer100g!.round()} kcal/100g',
+                                if (_analysis.proteinPer100g != null)
+                                  'P ${_analysis.proteinPer100g!.toStringAsFixed(1)}g',
+                                if (_analysis.carbsPer100g != null)
+                                  'C ${_analysis.carbsPer100g!.toStringAsFixed(1)}g',
+                                if (_analysis.fatPer100g != null)
+                                  'F ${_analysis.fatPer100g!.toStringAsFixed(1)}g',
+                                if (_analysis.fibrePer100g != null)
+                                  'Fibre ${_analysis.fibrePer100g!.toStringAsFixed(1)}g',
                                 if (_analysis.sugarPer100g != null)
-                                  'Sugar ${_analysis.sugarPer100g!.toStringAsFixed(1)}g/100g',
+                                  'Sugar ${_analysis.sugarPer100g!.toStringAsFixed(1)}g',
                                 if (_analysis.saltPer100g != null)
-                                  'Salt ${_analysis.saltPer100g!.toStringAsFixed(2)}g/100g',
+                                  'Salt ${_analysis.saltPer100g!.toStringAsFixed(2)}g',
                               ].join(' · '),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
@@ -344,6 +355,12 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                         ],
                       ),
                     ),
+                    if (_analysis.intelligence != null) ...[
+                      const SizedBox(height: 16),
+                      FoodIntelligenceCard(
+                        intelligence: _analysis.intelligence!,
+                      ),
+                    ] else ...[
                     const SizedBox(height: 16),
                     Text(
                       'Flags (${_analysis.riskCount})',
@@ -438,6 +455,7 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                         ],
                       ),
                     ),
+                    ],
                     if ((_analysis.ingredients.isNotEmpty) ||
                         (_analysis.ingredientsText != null &&
                             _analysis.ingredientsText!.trim().isNotEmpty)) ...[

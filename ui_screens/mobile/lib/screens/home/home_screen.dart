@@ -22,9 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   String? _error;
-  int _consumed = 0;
-  int _goal = 2200;
-  List<Meal> _meals = const [];
+  TodaySummary? _today;
 
   @override
   void initState() {
@@ -41,9 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final today = await foodApi.fetchToday();
       if (!mounted) return;
       setState(() {
-        _consumed = today.consumedKcal;
-        _goal = today.goalKcal;
-        _meals = today.meals;
+        _today = today;
         _loading = false;
       });
     } on ApiException catch (error) {
@@ -61,10 +57,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _goalLabel(String goal) {
+    switch (goal.toUpperCase()) {
+      case 'GAIN_MUSCLE':
+        return 'Muscle gain';
+      case 'MAINTAIN':
+        return 'Maintain';
+      default:
+        return 'Weight loss';
+    }
+  }
+
+  String _fmt(double v) {
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final progress = _goal == 0 ? 0.0 : _consumed / _goal;
-    final remaining = math.max(0, _goal - _consumed);
+    final today = _today;
+    final consumed = today?.consumedKcal ?? 0;
+    final goal = today?.goalKcal ?? 2200;
+    final meals = today?.meals ?? const <Meal>[];
+    final progress = goal == 0 ? 0.0 : consumed / goal;
+    final remaining = math.max(0, goal - consumed);
 
     return Scaffold(
       appBar: AppBar(
@@ -95,6 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (today != null) ...[
+                            Text(
+                              'Goal · ${_goalLabel(today.goal)}',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                           AppCard(
                             padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
                             child: Column(
@@ -120,13 +143,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            '$_consumed',
+                                            '$consumed',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .headlineMedium,
                                           ),
                                           Text(
-                                            'of $_goal kcal',
+                                            'of $goal kcal',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium,
@@ -149,27 +172,115 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+                          if (today != null) ...[
+                            const SizedBox(height: 14),
+                            AppCard(
+                              elevated: false,
+                              child: Column(
+                                children: [
+                                  _MacroProgress(
+                                    label: 'Protein',
+                                    consumed: today.consumedProteinGrams,
+                                    goal: today.goalProteinGrams,
+                                    color: AppColors.primary,
+                                    format: _fmt,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _MacroProgress(
+                                    label: 'Carbs',
+                                    consumed: today.consumedCarbsGrams,
+                                    goal: today.goalCarbsGrams,
+                                    color: AppColors.accent,
+                                    format: _fmt,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _MacroProgress(
+                                    label: 'Fat',
+                                    consumed: today.consumedFatGrams,
+                                    goal: today.goalFatGrams,
+                                    color: const Color(0xFF5B8DEF),
+                                    format: _fmt,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _MacroProgress(
+                                    label: 'Fibre',
+                                    consumed: today.consumedFibreGrams,
+                                    goal: today.goalFibreGrams,
+                                    color: AppColors.success,
+                                    format: _fmt,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _MacroProgress(
+                                    label: 'Sugar',
+                                    consumed: today.consumedSugarGrams,
+                                    goal: today.goalSugarGrams,
+                                    color: AppColors.warning,
+                                    format: _fmt,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 22),
+                          Text(
+                            'Scan',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 10),
+                          PrimaryButton(
+                            label: 'Scan Food',
+                            icon: Icons.camera_alt_outlined,
+                            onPressed: () {
+                              Navigator.pushNamed(context, AppRoutes.scan);
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SecondaryButton(
+                                  label: 'Barcode',
+                                  icon: Icons.qr_code_2_outlined,
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.packagedBarcode,
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: SecondaryButton(
+                                  label: 'Label',
+                                  icon: Icons.document_scanner_outlined,
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.packagedLabel,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 22),
                           SectionHeader(
                             title: 'Meals',
-                            subtitle: _meals.isEmpty
+                            subtitle: meals.isEmpty
                                 ? 'Nothing logged yet'
-                                : '${_meals.length} logged today',
+                                : '${meals.length} logged today',
                           ),
                           const SizedBox(height: 12),
-                          if (_meals.isEmpty)
+                          if (meals.isEmpty)
                             EmptyState(
                               title: 'No meals yet',
                               message:
                                   'Scan your first meal to start building today’s log.',
                               icon: Icons.restaurant_outlined,
-                              actionLabel: 'Scan Food',
-                              onAction: () {
-                                Navigator.pushNamed(context, AppRoutes.scan);
-                              },
                             )
-                          else ...[
-                            ..._meals.map(
+                          else
+                            ...meals.map(
                               (meal) => Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: AppCard(
@@ -212,20 +323,59 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 18),
-                            PrimaryButton(
-                              label: 'Scan Food',
-                              icon: Icons.camera_alt_outlined,
-                              onPressed: () {
-                                Navigator.pushNamed(context, AppRoutes.scan);
-                              },
-                            ),
-                          ],
                         ],
                       ),
                     ),
                   ),
       ),
+    );
+  }
+}
+
+class _MacroProgress extends StatelessWidget {
+  const _MacroProgress({
+    required this.label,
+    required this.consumed,
+    required this.goal,
+    required this.color,
+    required this.format,
+  });
+
+  final String label;
+  final double consumed;
+  final double goal;
+  final Color color;
+  final String Function(double) format;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = goal <= 0 ? 0.0 : consumed / goal;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            ),
+            Text(
+              '${format(consumed)} / ${format(goal)}g',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primaryDark,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.full),
+          child: LinearProgressIndicator(
+            value: ratio.clamp(0.0, 1.0),
+            minHeight: 7,
+            backgroundColor: AppColors.border,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

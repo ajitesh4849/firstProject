@@ -102,9 +102,26 @@ Response:
   "proteinGrams": 14,
   "carbsGrams": 12,
   "fatGrams": 30,
-  "estimated": true
+  "fibreGrams": 3,
+  "sugarGrams": 8,
+  "sodiumMg": 840,
+  "estimated": true,
+  "intelligence": {
+    "healthScore": 64,
+    "healthBand": "MODERATE",
+    "good": [{ "title": "Good protein", "detail": "…", "kind": "GOOD" }],
+    "watch": [{ "title": "High fat share", "detail": "…", "kind": "WATCH" }],
+    "personalizedScore": 58,
+    "personalizedVerdict": "Fits weight loss better if you reduce the portion…",
+    "goal": "LOSE_WEIGHT",
+    "alternatives": [
+      { "name": "Tandoori / grilled paneer or chicken", "reason": "Similar protein with less creamy gravy." }
+    ]
+  }
 }
 ```
+
+`intelligence` is rule-based (not an LLM): health score 0–100, GOOD/WATCH with why, personalized verdict for the user’s goal, and named alternatives.
 
 Nutrition estimation logic: `docs/07-calorie-and-estimation-logic.md`.
 
@@ -116,7 +133,7 @@ Nutrition estimation logic: `docs/07-calorie-and-estimation-logic.md`.
 
 Path: digits-only barcode (EAN/UPC style).
 
-Response (success): same `PackagedFoodResponse` shape (score, flags, swaps, ingredients…).
+Response (success): `PackagedFoodResponse` including nutrition-per-100g fields when available, legacy `score` (`BETTER`/`OK`/`CAUTION`), flags, swaps, ingredients, plus nested `intelligence` (same shape as meal nutrition).
 
 Not found → HTTP 404. Mobile offers **Photograph ingredients** fallback.
 
@@ -140,7 +157,7 @@ Adds a nutrition result to today's intake.
 
 ### GET /api/v1/me/today
 
-Returns today's calorie total, `dailyGoalKcal`, and meals.
+Returns today's calorie total, macro totals vs goals (protein/carbs/fat/fibre/sugar), user `goal`, and meals.
 
 Used by Home on load (including after Profile save) so the progress bar stays in sync.
 

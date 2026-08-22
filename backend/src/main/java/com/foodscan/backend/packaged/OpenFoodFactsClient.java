@@ -71,6 +71,11 @@ public class OpenFoodFactsClient {
                     ? (Map<String, Object>) map
                     : Map.of();
 
+            Double salt = asDouble(nutriments.get("salt_100g"));
+            Double sodium = firstNonNull(
+                    asDouble(nutriments.get("sodium_100g")),
+                    salt == null ? null : salt * 400.0
+            );
             return new OpenFoodFactsProduct(
                     cleaned,
                     firstNonBlank(
@@ -87,11 +92,23 @@ public class OpenFoodFactsClient {
                     ),
                     asString(product.get("categories")),
                     asDouble(nutriments.get("sugars_100g")),
-                    asDouble(nutriments.get("salt_100g")),
+                    salt,
                     firstNonNull(
                             asDouble(nutriments.get("energy-kcal_100g")),
                             asDouble(nutriments.get("energy-kcal_value"))
                     ),
+                    asDouble(nutriments.get("proteins_100g")),
+                    firstNonNull(
+                            asDouble(nutriments.get("carbohydrates_100g")),
+                            asDouble(nutriments.get("carbohydrates_value"))
+                    ),
+                    asDouble(nutriments.get("fat_100g")),
+                    firstNonNull(
+                            asDouble(nutriments.get("fiber_100g")),
+                            asDouble(nutriments.get("fibre_100g"))
+                    ),
+                    asDouble(nutriments.get("saturated-fat_100g")),
+                    sodium,
                     true
             );
         } catch (RestClientException ex) {

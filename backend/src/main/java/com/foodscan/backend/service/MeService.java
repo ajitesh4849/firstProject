@@ -12,6 +12,7 @@ import com.foodscan.backend.entity.UserAccount;
 import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
 import com.foodscan.backend.nutrition.DailyCalorieGoalCalculator;
+import com.foodscan.backend.nutrition.DailyMacroGoals;
 import com.foodscan.backend.repository.MealEntryRepository;
 import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
@@ -73,10 +74,31 @@ public class MeService {
         LocalDate today = LocalDate.now();
         List<MealEntry> meals = mealEntryRepository.findByUserIdAndMealDateOrderByCreatedAtAsc(user.getId(), today);
         int consumed = meals.stream().mapToInt(MealEntry::getCalories).sum();
+        double protein = meals.stream().mapToDouble(m -> nz(m.getProteinGrams())).sum();
+        double carbs = meals.stream().mapToDouble(m -> nz(m.getCarbsGrams())).sum();
+        double fat = meals.stream().mapToDouble(m -> nz(m.getFatGrams())).sum();
+        double fibre = meals.stream().mapToDouble(m -> nz(m.getFibreGrams())).sum();
+        double sugar = meals.stream().mapToDouble(m -> nz(m.getSugarGrams())).sum();
+        DailyMacroGoals.Targets targets = DailyMacroGoals.fromCalorieGoal(user.getDailyGoalKcal());
         List<MealDto> mealDtos = meals.stream()
                 .map(meal -> new MealDto(meal.getFoodName(), meal.getCalories()))
                 .toList();
-        return new TodayResponse(consumed, user.getDailyGoalKcal(), mealDtos);
+        return new TodayResponse(
+                consumed,
+                user.getDailyGoalKcal(),
+                round1(protein),
+                targets.proteinGrams(),
+                round1(carbs),
+                targets.carbsGrams(),
+                round1(fat),
+                targets.fatGrams(),
+                round1(fibre),
+                targets.fibreGrams(),
+                round1(sugar),
+                targets.sugarGrams(),
+                user.getGoal() == null ? "LOSE_WEIGHT" : user.getGoal(),
+                mealDtos
+        );
     }
 
     @Transactional
@@ -90,6 +112,8 @@ public class MeService {
         meal.setProteinGrams(request.proteinGrams());
         meal.setCarbsGrams(request.carbsGrams());
         meal.setFatGrams(request.fatGrams());
+        meal.setFibreGrams(request.fibreGrams() == null ? 0.0 : request.fibreGrams());
+        meal.setSugarGrams(request.sugarGrams() == null ? 0.0 : request.sugarGrams());
         meal.setMealDate(LocalDate.now());
         mealEntryRepository.save(meal);
         return new MealDto(meal.getFoodName(), meal.getCalories());
@@ -194,5 +218,13 @@ public class MeService {
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toUpperCase(Locale.ENGLISH);
+    }
+
+    private static double nz(Double value) {
+        return value == null ? 0.0 : value;
+    }
+
+    private static double round1(double value) {
+        return Math.round(value * 10.0) / 10.0;
     }
 }

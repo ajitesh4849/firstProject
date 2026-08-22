@@ -10,6 +10,8 @@ public record AddMealRequest(
         @NotNull @Min(0) Integer calories,
         @NotNull @Min(0) Double proteinGrams,
         @NotNull @Min(0) Double carbsGrams,
-        @NotNull @Min(0) Double fatGrams
+        @NotNull @Min(0) Double fatGrams,
+        @Min(0) Double fibreGrams,
+        @Min(0) Double sugarGrams
 ) {
 }

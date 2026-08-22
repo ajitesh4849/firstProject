@@ -2,20 +2,25 @@ package com.foodscan.backend.service;
 
 import com.foodscan.backend.client.AiServiceClient;
 import com.foodscan.backend.dto.AiLabelReadResponse;
+import com.foodscan.backend.dto.FoodIntelligenceDto;
 import com.foodscan.backend.dto.PackagedFoodResponse;
 import com.foodscan.backend.dto.SavePackagedSeedRequest;
 import com.foodscan.backend.entity.PackagedProductSeed;
+import com.foodscan.backend.entity.UserAccount;
 import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
+import com.foodscan.backend.intelligence.FoodIntelligenceService;
 import com.foodscan.backend.packaged.OpenFoodFactsClient;
 import com.foodscan.backend.packaged.OpenFoodFactsProduct;
 import com.foodscan.backend.packaged.PackagedFoodRiskAnalyzer;
 import com.foodscan.backend.repository.PackagedProductSeedRepository;
+import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -39,19 +44,25 @@ public class PackagedFoodService {
     private final AiServiceClient aiServiceClient;
     private final PackagedProductSeedRepository seedRepository;
     private final CurrentUserService currentUserService;
+    private final UserAccountRepository userAccountRepository;
+    private final FoodIntelligenceService foodIntelligenceService;
 
     public PackagedFoodService(
             OpenFoodFactsClient openFoodFactsClient,
             PackagedFoodRiskAnalyzer riskAnalyzer,
             AiServiceClient aiServiceClient,
             PackagedProductSeedRepository seedRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            UserAccountRepository userAccountRepository,
+            FoodIntelligenceService foodIntelligenceService
     ) {
         this.openFoodFactsClient = openFoodFactsClient;
         this.riskAnalyzer = riskAnalyzer;
         this.aiServiceClient = aiServiceClient;
         this.seedRepository = seedRepository;
         this.currentUserService = currentUserService;
+        this.userAccountRepository = userAccountRepository;
+        this.foodIntelligenceService = foodIntelligenceService;
     }
 
     public PackagedFoodResponse analyzeBarcode(String barcode) {
@@ -60,7 +71,6 @@ public class PackagedFoodService {
             throw new BadRequestException("Enter a valid barcode (8–14 digits)");
         }
 
-        // 1) Local seed (fast indexed Postgres lookup — does not slow the app)
         OpenFoodFactsProduct fromSeed = seedRepository.findByBarcode(cleaned)
                 .map(this::toProduct)
                 .orElse(null);
@@ -68,7 +78,6 @@ public class PackagedFoodService {
             return toResponse(fromSeed, SEED_DISCLAIMER, SOURCE_SEED, false);
         }
 
-        // 2) Open Food Facts (network)
         OpenFoodFactsProduct product = openFoodFactsClient.fetchByBarcode(cleaned);
         if (!product.found()) {
             throw new NotFoundException("Product not found for barcode " + cleaned);
@@ -96,6 +105,12 @@ public class PackagedFoodService {
                 null,
                 label.ingredientsText().trim(),
                 "",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -144,6 +159,12 @@ public class PackagedFoodService {
                 seed.getSugarPer100g(),
                 seed.getSaltPer100g(),
                 seed.getEnergyKcalPer100g(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                seed.getSaltPer100g() == null ? null : seed.getSaltPer100g() * 400.0,
                 true
         );
     }
@@ -155,6 +176,21 @@ public class PackagedFoodService {
             boolean canSaveToCatalog
     ) {
         PackagedFoodRiskAnalyzer.AnalysisResult analysis = riskAnalyzer.analyze(product);
+        String goal = currentUserGoal();
+        FoodIntelligenceDto intelligence = foodIntelligenceService.forPackaged(
+                product,
+                analysis.flags(),
+                analysis.ingredients(),
+                goal
+        );
+        String legacyScore = FoodIntelligenceService.legacyPackagedScore(intelligence.healthScore());
+        List<String> swaps = intelligence.alternatives().stream()
+                .map(a -> a.name() + " — " + a.reason())
+                .toList();
+        if (swaps.isEmpty()) {
+            swaps = analysis.healthierSwaps();
+        }
+
         return new PackagedFoodResponse(
                 product.barcode(),
                 product.productName(),
@@ -164,16 +200,34 @@ public class PackagedFoodService {
                 product.sugarPer100g(),
                 product.saltPer100g(),
                 product.energyKcalPer100g(),
-                analysis.score(),
+                product.proteinPer100g(),
+                product.carbsPer100g(),
+                product.fatPer100g(),
+                product.fibrePer100g(),
+                product.saturatedFatPer100g(),
+                product.sodiumMgPer100g(),
+                legacyScore,
                 analysis.flags().size(),
                 analysis.flags(),
-                analysis.healthierSwaps(),
+                swaps,
                 disclaimer,
                 true,
                 source,
                 canSaveToCatalog,
-                analysis.ingredients()
+                analysis.ingredients(),
+                intelligence
         );
+    }
+
+    private String currentUserGoal() {
+        try {
+            UUID userId = currentUserService.requireUserId();
+            return userAccountRepository.findById(userId)
+                    .map(UserAccount::getGoal)
+                    .orElse("LOSE_WEIGHT");
+        } catch (RuntimeException ex) {
+            return "LOSE_WEIGHT";
+        }
     }
 
     private static String cleanBarcode(String barcode) {

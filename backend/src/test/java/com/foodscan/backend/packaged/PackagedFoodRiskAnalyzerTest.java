@@ -24,6 +24,12 @@ class PackagedFoodRiskAnalyzerTest {
                 28.0,
                 0.1,
                 120.0,
+                0.0,
+                28.0,
+                0.0,
+                0.0,
+                0.0,
+                40.0,
                 true
         );
 
@@ -46,6 +52,12 @@ class PackagedFoodRiskAnalyzerTest {
                 1.0,
                 0.01,
                 370.0,
+                13.0,
+                60.0,
+                7.0,
+                10.0,
+                1.0,
+                4.0,
                 true
         );
 

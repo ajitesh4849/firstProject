@@ -1,7 +1,5 @@
 package com.foodscan.backend.packaged;
 
-import java.util.List;
-
 public record OpenFoodFactsProduct(
         String barcode,
         String productName,
@@ -12,9 +10,19 @@ public record OpenFoodFactsProduct(
         Double sugarPer100g,
         Double saltPer100g,
         Double energyKcalPer100g,
+        Double proteinPer100g,
+        Double carbsPer100g,
+        Double fatPer100g,
+        Double fibrePer100g,
+        Double saturatedFatPer100g,
+        Double sodiumMgPer100g,
         boolean found
 ) {
     public static OpenFoodFactsProduct notFound(String barcode) {
-        return new OpenFoodFactsProduct(barcode, null, null, null, null, null, null, null, null, false);
+        return new OpenFoodFactsProduct(
+                barcode, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null,
+                false
+        );
     }
 }

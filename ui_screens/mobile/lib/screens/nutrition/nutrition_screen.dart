@@ -7,6 +7,7 @@ import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/food_intelligence_card.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/ux_states.dart';
 
@@ -63,6 +64,11 @@ class _NutritionScreenState extends State<NutritionScreen> {
     Navigator.pushNamed(context, AppRoutes.scan);
   }
 
+  String _fmt(double v) {
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final nutrition = widget.nutrition;
@@ -70,6 +76,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
     final carbs = nutrition.carbsGrams;
     final fat = nutrition.fatGrams;
     final total = (protein + carbs + fat).clamp(1, 9999);
+    final intelligence = nutrition.intelligence;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrition')),
@@ -123,27 +130,53 @@ class _NutritionScreenState extends State<NutritionScreen> {
                           children: [
                             _MacroMeter(
                               label: 'Protein',
-                              valueLabel: '${protein}g',
+                              valueLabel: '${_fmt(protein)}g',
                               ratio: protein / total,
                               color: AppColors.primary,
                             ),
                             const SizedBox(height: 16),
                             _MacroMeter(
                               label: 'Carbs',
-                              valueLabel: '${carbs}g',
+                              valueLabel: '${_fmt(carbs)}g',
                               ratio: carbs / total,
                               color: AppColors.accent,
                             ),
                             const SizedBox(height: 16),
                             _MacroMeter(
                               label: 'Fat',
-                              valueLabel: '${fat}g',
+                              valueLabel: '${_fmt(fat)}g',
                               ratio: fat / total,
                               color: const Color(0xFF5B8DEF),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      AppCard(
+                        elevated: false,
+                        child: Column(
+                          children: [
+                            _NutrientRow(
+                              label: 'Fibre',
+                              value: '${_fmt(nutrition.fibreGrams)}g',
+                            ),
+                            const SizedBox(height: 10),
+                            _NutrientRow(
+                              label: 'Sugar',
+                              value: '${_fmt(nutrition.sugarGrams)}g',
+                            ),
+                            const SizedBox(height: 10),
+                            _NutrientRow(
+                              label: 'Sodium',
+                              value: '${_fmt(nutrition.sodiumMg)}mg',
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (intelligence != null) ...[
+                        const SizedBox(height: 18),
+                        FoodIntelligenceCard(intelligence: intelligence),
+                      ],
                       const SizedBox(height: 14),
                       Text(
                         AppConstants.nutritionDisclaimer,
@@ -157,6 +190,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
                         ),
                       ],
                       const Spacer(),
+                      const SizedBox(height: 18),
                       PrimaryButton(
                         label: 'Add to Today',
                         icon: Icons.check_circle_outline,
@@ -177,6 +211,30 @@ class _NutritionScreenState extends State<NutritionScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _NutrientRow extends StatelessWidget {
+  const _NutrientRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.primaryDark,
+              ),
+        ),
+      ],
     );
   }
 }

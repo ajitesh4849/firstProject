@@ -41,6 +41,12 @@ public class MealEntry {
     @Column(nullable = false)
     private Double fatGrams;
 
+    @Column
+    private Double fibreGrams = 0.0;
+
+    @Column
+    private Double sugarGrams = 0.0;
+
     @Column(nullable = false)
     private LocalDate mealDate;
 
@@ -52,6 +58,12 @@ public class MealEntry {
         createdAt = Instant.now();
         if (mealDate == null) {
             mealDate = LocalDate.now();
+        }
+        if (fibreGrams == null) {
+            fibreGrams = 0.0;
+        }
+        if (sugarGrams == null) {
+            sugarGrams = 0.0;
         }
     }
 
@@ -113,6 +125,22 @@ public class MealEntry {
 
     public void setFatGrams(Double fatGrams) {
         this.fatGrams = fatGrams;
+    }
+
+    public Double getFibreGrams() {
+        return fibreGrams;
+    }
+
+    public void setFibreGrams(Double fibreGrams) {
+        this.fibreGrams = fibreGrams;
+    }
+
+    public Double getSugarGrams() {
+        return sugarGrams;
+    }
+
+    public void setSugarGrams(Double sugarGrams) {
+        this.sugarGrams = sugarGrams;
     }
 
     public LocalDate getMealDate() {

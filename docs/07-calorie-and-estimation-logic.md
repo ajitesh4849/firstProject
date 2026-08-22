@@ -240,6 +240,24 @@ A: User profile and daily goal in Postgres `users`; meals in meal entries; scans
 3. Let advanced users **manually override** daily kcal  
 4. Activity from wearables (Apple Health / Google Fit)
 
+### Track A (shipped in code): food intelligence layer
+
+Rule-based (no LLM) on meal nutrition + packaged results:
+- Health score 0–100 + band
+- GOOD / WATCH points with short “why”
+- Personalized score + verdict from profile goal
+- Named healthier alternatives
+- Home macro dashboard (P/C/F/fibre/sugar vs goals)
+
+Implementation: `FoodIntelligenceService`, nested `intelligence` on nutrition + packaged responses.
+
+### Indian meal nutrition DB (performance)
+
+- Table: `food_nutrition` (curated per-100g macros + aliases)
+- Startup: seed once if empty → load **entire table into memory** (`FoodNutritionCache`)
+- Request path: **O(1)/in-memory map only** — never queries Postgres during `/nutrition`
+- No LLM involved in nutrition numbers
+
 ---
 
 ## 8. Key source files

@@ -10,16 +10,16 @@ class NutritionEstimatorTest {
     private final NutritionEstimator estimator = new NutritionEstimator();
 
     @Test
-    void usesExactDishProfile() {
-        MacroProfile dosa = estimator.estimateFor("Masala Dosa");
-        assertEquals(170, dosa.caloriesPer100g());
-        assertEquals(4.0, dosa.proteinPer100g());
+    void usesKeywordHeuristicsWhenCacheEmpty() {
+        MacroProfile salad = estimator.estimateFor("Mixed Green Salad Bowl");
+        assertTrue(salad.caloriesPer100g() < 100);
     }
 
     @Test
-    void usesKeywordHeuristics() {
-        MacroProfile salad = estimator.estimateFor("Mixed Green Salad Bowl");
-        assertTrue(salad.caloriesPer100g() < 100);
+    void dosaKeywordMatch() {
+        MacroProfile dosa = estimator.estimateFor("Masala Dosa");
+        assertEquals(170, dosa.caloriesPer100g());
+        assertEquals(4.0, dosa.proteinPer100g());
     }
 
     @Test
