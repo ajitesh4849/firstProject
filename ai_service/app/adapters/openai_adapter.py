@@ -20,11 +20,14 @@ SYSTEM_PROMPT = (
 )
 
 LABEL_SYSTEM_PROMPT = (
-    "You read packaged-food ingredient labels for a consumer health app. "
-    "Extract the product name (if visible), brand (if visible), and the full ingredients list text. "
+    "You read packaged-food labels for a consumer health app. "
+    "Extract: (1) brand name from the logo or front/back packaging if visible, "
+    "(2) product name, (3) the full ingredients list text. "
+    "Brand is important — look near the top of the pack, logo, or manufacturer line. "
     "Respond with JSON only in this exact shape: "
     '{"productName":"<name or Unknown product>","brand":"<brand or null>",'
     '"ingredientsText":"<ingredients as plain text>","confidence":<number from 0 to 1>}. '
+    "If brand is not clearly visible, set brand to null (do not invent a brand). "
     "Preserve ingredient names and E-numbers. If the image is not a food label, "
     "set ingredientsText to an empty string and confidence below 0.4."
 )
@@ -33,7 +36,7 @@ LABEL_SYSTEM_PROMPT = (
 class OpenAIVisionAdapter(FoodRecognitionAdapter):
     """Calls OpenAI Chat Completions with vision to identify food in an image."""
 
-    def __init__(self, api_key: str, model: str, timeout_seconds: float = 60.0) -> None:
+    def __init__(self, api_key: str, model: str, timeout_seconds: float = 35.0) -> None:
         self._api_key = api_key
         self._model = model
         self._timeout_seconds = timeout_seconds
@@ -44,7 +47,9 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
             user_text="Identify the primary food in this image.",
             image_bytes=image_bytes,
             content_type=content_type,
-            max_tokens=120,
+            max_tokens=80,
+            image_detail="low",
+            timeout_seconds=min(self._timeout_seconds, 25.0),
         )
         food_name = str(parsed.get("foodName") or parsed.get("food_name") or "").strip()
         if not food_name:
@@ -58,10 +63,12 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
     ) -> LabelReadResponse:
         parsed = await self._vision_json(
             system_prompt=LABEL_SYSTEM_PROMPT,
-            user_text="Read the packaged food ingredients label in this photo.",
+            user_text="Read this packaged food label. Prefer extracting brand and product name if visible, then the ingredients list.",
             image_bytes=image_bytes,
             content_type=content_type,
-            max_tokens=500,
+            max_tokens=350,
+            image_detail="high",
+            timeout_seconds=self._timeout_seconds,
         )
         ingredients = str(
             parsed.get("ingredientsText") or parsed.get("ingredients_text") or ""
@@ -90,13 +97,17 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
         image_bytes: bytes,
         content_type: str,
         max_tokens: int,
+        image_detail: str = "auto",
+        timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
-        encoded = base64.b64encode(image_bytes).decode("ascii")
+        # Large base64 payloads are a common latency source; refuse oversized originals early.
+        payload_bytes = _ensure_reasonable_image_size(image_bytes)
+        encoded = base64.b64encode(payload_bytes).decode("ascii")
         data_url = f"data:{content_type};base64,{encoded}"
 
         payload: dict[str, Any] = {
             "model": self._model,
-            "temperature": 0.2,
+            "temperature": 0.1,
             "max_tokens": max_tokens,
             "response_format": {"type": "json_object"},
             "messages": [
@@ -105,7 +116,10 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": user_text},
-                        {"type": "image_url", "image_url": {"url": data_url}},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": data_url, "detail": image_detail},
+                        },
                     ],
                 },
             ],
@@ -116,7 +130,8 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=self._timeout_seconds) as client:
+        timeout = timeout_seconds if timeout_seconds is not None else self._timeout_seconds
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(OPENAI_CHAT_URL, headers=headers, json=payload)
 
         if response.status_code >= 400:
@@ -130,6 +145,13 @@ class OpenAIVisionAdapter(FoodRecognitionAdapter):
             raise RuntimeError(f"Unexpected OpenAI response shape: {body}") from exc
 
         return _parse_prediction(content)
+
+
+def _ensure_reasonable_image_size(image_bytes: bytes) -> bytes:
+    """Fail fast on huge gallery originals (client should already compress)."""
+    if len(image_bytes) > 3 * 1024 * 1024:
+        raise RuntimeError("Image too large for fast analysis. Use a closer, compressed photo.")
+    return image_bytes
 
 
 def _parse_prediction(content: str) -> dict[str, Any]:

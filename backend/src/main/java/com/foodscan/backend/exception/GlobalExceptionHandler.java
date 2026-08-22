@@ -45,7 +45,10 @@ public class GlobalExceptionHandler {
         Map<String, String> details = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> details.put(error.getField(), error.getDefaultMessage()));
-        String message = details.values().stream().findFirst().orElse("Request validation failed");
+        String message = details.entrySet().stream()
+                .findFirst()
+                .map(e -> e.getKey() + ": " + e.getValue())
+                .orElse("Request validation failed");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiErrorResponse("VALIDATION_ERROR", message, details));
     }

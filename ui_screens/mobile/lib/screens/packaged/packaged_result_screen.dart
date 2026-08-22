@@ -20,6 +20,7 @@ class PackagedResultScreen extends StatefulWidget {
 
 class _PackagedResultScreenState extends State<PackagedResultScreen> {
   late PackagedFoodAnalysis _analysis;
+  late final TextEditingController _brandController;
   bool _saving = false;
   String? _saveMessage;
 
@@ -27,7 +28,16 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
   void initState() {
     super.initState();
     _analysis = widget.analysis;
+    _brandController = TextEditingController(text: _analysis.brand?.trim() ?? '');
   }
+
+  @override
+  void dispose() {
+    _brandController.dispose();
+    super.dispose();
+  }
+
+  bool get _brandMissing => _brandController.text.trim().isEmpty;
 
   Color _scoreColor(String score) {
     switch (score.toUpperCase()) {
@@ -66,17 +76,27 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
 
   Future<void> _saveToCatalog() async {
     if (_saving || !_analysis.canSaveToCatalog) return;
+    final brand = _brandController.text.trim();
+    if (brand.isEmpty) {
+      setState(() {
+        _saveMessage = 'Please mention the brand name so we can reuse it next time.';
+      });
+      return;
+    }
     setState(() {
       _saving = true;
       _saveMessage = null;
+      _analysis = _analysis.copyWith(brand: brand);
     });
     try {
       final saved = await foodApi.savePackagedToCatalog(_analysis);
       if (!mounted) return;
       setState(() {
         _analysis = saved;
+        _brandController.text = saved.brand?.trim() ?? brand;
         _saving = false;
-        _saveMessage = 'Saved. Next barcode scan will find this product faster.';
+        _saveMessage =
+            'Saved with brand “${saved.brand ?? brand}”. Next barcode scan will find it faster.';
       });
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -284,14 +304,30 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                             _analysis.productName,
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          if (_analysis.brand != null &&
-                              _analysis.brand!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              _analysis.brand!,
-                              style: Theme.of(context).textTheme.bodyMedium,
+                          const SizedBox(height: 12),
+                          Text(
+                            'Brand',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _brandController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: InputDecoration(
+                              hintText: _brandMissing
+                                  ? 'Mention the brand name (e.g. Parle, Amul)'
+                                  : 'Brand name',
+                              helperText: _brandMissing
+                                  ? 'Brand was not detected — add it so future scans can reuse it.'
+                                  : 'Edit if this looks wrong; saved with the product catalog.',
+                              helperMaxLines: 2,
+                              prefixIcon: const Icon(Icons.storefront_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadii.md),
+                              ),
                             ),
-                          ],
+                            onChanged: (_) => setState(() {}),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Barcode ${_analysis.barcode}',
@@ -578,7 +614,9 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Saves this barcode locally so the next scan finds it without Open Food Facts.',
+                      _analysis.isFromLabelPhoto
+                          ? 'Save after a label photo so the next barcode scan finds this product locally.'
+                          : 'Optional: save this Open Food Facts product locally for faster scans next time.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     if (_saveMessage != null) ...[

@@ -83,7 +83,7 @@ public class PackagedFoodService {
             throw new NotFoundException("Product not found for barcode " + cleaned);
         }
 
-        return toResponse(product, PackagedFoodRiskAnalyzer.DISCLAIMER, SOURCE_OFF, false);
+        return toResponse(product, PackagedFoodRiskAnalyzer.DISCLAIMER, SOURCE_OFF, true);
     }
 
     public PackagedFoodResponse analyzeLabelPhoto(MultipartFile image, String barcodeHint) {
@@ -120,16 +120,16 @@ public class PackagedFoodService {
         return toResponse(product, LABEL_DISCLAIMER, SOURCE_LABEL, canSave);
     }
 
+    private static final String MISSING_INGREDIENTS_PLACEHOLDER =
+            "(Ingredients not listed in product database)";
+
     @Transactional
     public PackagedFoodResponse saveToCatalog(SavePackagedSeedRequest request) {
         String barcode = cleanBarcode(request.barcode());
         if (!isValidBarcode(barcode)) {
             throw new BadRequestException("Enter a valid barcode (8–14 digits)");
         }
-        String ingredients = blankTo(request.ingredientsText(), "");
-        if (ingredients.isBlank()) {
-            throw new BadRequestException("Ingredients text is required to save the product");
-        }
+        String ingredients = blankTo(request.ingredientsText(), MISSING_INGREDIENTS_PLACEHOLDER);
 
         UUID userId = currentUserService.requireUserId();
         PackagedProductSeed seed = seedRepository.findByBarcode(barcode).orElseGet(PackagedProductSeed::new);

@@ -29,8 +29,8 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       final file = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
-        maxWidth: 1600,
+        imageQuality: 70,
+        maxWidth: 1280,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();

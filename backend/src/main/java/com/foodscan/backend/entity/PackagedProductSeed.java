@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -20,7 +21,10 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "packaged_product_seeds",
-        uniqueConstraints = @UniqueConstraint(name = "uk_packaged_seed_barcode", columnNames = "barcode")
+        uniqueConstraints = @UniqueConstraint(name = "uk_packaged_seed_barcode", columnNames = "barcode"),
+        indexes = {
+                @Index(name = "idx_packaged_seed_brand", columnList = "brand")
+        }
 )
 public class PackagedProductSeed {
 

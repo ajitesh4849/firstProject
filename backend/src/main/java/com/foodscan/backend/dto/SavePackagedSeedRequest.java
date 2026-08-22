@@ -19,7 +19,7 @@ public record SavePackagedSeedRequest(
         @Size(max = 64)
         String quantity,
 
-        @NotBlank
+        /** Optional — Open Food Facts sometimes has no ingredients text. */
         @Size(max = 8000)
         String ingredientsText,
 

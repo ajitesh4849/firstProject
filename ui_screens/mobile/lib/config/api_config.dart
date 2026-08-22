@@ -14,5 +14,7 @@ class ApiConfig {
   }
 
   static const Duration timeout = Duration(seconds: 25);
+  /// Photo scan / label upload: allow vision model time, but fail before feeling stuck.
+  static const Duration scanTimeout = Duration(seconds: 40);
   static const Duration connectTimeout = Duration(seconds: 8);
 }

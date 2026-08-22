@@ -76,15 +76,17 @@ class ApiClient {
   }
 
   bool _isTransientNetworkError(Object error) {
-    if (error is TimeoutException) return true;
+    // Never retry timeouts — that doubles wait (e.g. 40s + 40s) on slow vision calls.
+    if (error is TimeoutException) return false;
     if (error is SocketException) return true;
     if (error is HttpException) return true;
     if (error is http.ClientException) return true;
     final message = error.toString().toLowerCase();
-    return message.contains('timeout') ||
-        message.contains('connection') ||
+    return message.contains('connection') ||
         message.contains('network') ||
-        message.contains('socket');
+        message.contains('socket') ||
+        message.contains('broken pipe') ||
+        message.contains('connection reset');
   }
 
   Future<T> _withNetworkRetry<T>(Future<T> Function() action) async {
@@ -164,8 +166,9 @@ class ApiClient {
         ),
       );
 
-      final streamed = await _http.send(request).timeout(ApiConfig.timeout);
-      final response = await http.Response.fromStream(streamed);
+      final streamed = await _http.send(request).timeout(ApiConfig.scanTimeout);
+      final response = await http.Response.fromStream(streamed)
+          .timeout(ApiConfig.scanTimeout);
       return _decode(response);
     });
   }

@@ -9,9 +9,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,8 +27,15 @@ public class AiServiceClient {
     private final String predictUrl;
     private final String readLabelUrl;
 
-    public AiServiceClient(@Value("${foodscan.ai.base-url}") String baseUrl) {
-        this.restTemplate = new RestTemplate();
+    public AiServiceClient(
+            @Value("${foodscan.ai.base-url}") String baseUrl,
+            @Value("${foodscan.ai.connect-timeout-ms:5000}") int connectTimeoutMs,
+            @Value("${foodscan.ai.read-timeout-ms:35000}") int readTimeoutMs
+    ) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(connectTimeoutMs);
+        factory.setReadTimeout(readTimeoutMs);
+        this.restTemplate = new RestTemplate(factory);
         String root = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.predictUrl = root + "/predict";
         this.readLabelUrl = root + "/read-label";
@@ -98,6 +107,10 @@ public class AiServiceClient {
             throw new BadRequestException("AI service rejected image: " + ex.getResponseBodyAsString());
         } catch (BadRequestException ex) {
             throw ex;
+        } catch (ResourceAccessException ex) {
+            throw new BadRequestException(
+                    "Food analysis timed out or AI service is unreachable. Try a clearer, closer photo."
+            );
         } catch (IOException | RuntimeException ex) {
             throw new BadRequestException("AI service unavailable: " + ex.getMessage());
         }

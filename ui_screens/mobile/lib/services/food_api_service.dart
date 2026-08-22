@@ -131,6 +131,7 @@ class FoodApiService {
   Future<PackagedFoodAnalysis> savePackagedToCatalog(
     PackagedFoodAnalysis analysis,
   ) async {
+    final ingredients = analysis.ingredientsText?.trim();
     final body = await _client.postJson(
       '/api/v1/packaged/catalog',
       body: {
@@ -138,7 +139,9 @@ class FoodApiService {
         'productName': analysis.productName,
         'brand': analysis.brand,
         'quantity': analysis.quantity,
-        'ingredientsText': analysis.ingredientsText,
+        'ingredientsText': (ingredients != null && ingredients.isNotEmpty)
+            ? ingredients
+            : '(Ingredients not listed in product database)',
         'sugarPer100g': analysis.sugarPer100g,
         'saltPer100g': analysis.saltPer100g,
         'energyKcalPer100g': analysis.energyKcalPer100g,
