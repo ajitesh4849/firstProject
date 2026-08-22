@@ -222,11 +222,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                           const SizedBox(height: 22),
-                          Text(
-                            'Scan',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 10),
                           PrimaryButton(
                             label: 'Scan Food',
                             icon: Icons.camera_alt_outlined,
@@ -234,35 +229,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.pushNamed(context, AppRoutes.scan);
                             },
                           ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: SecondaryButton(
-                                  label: 'Barcode',
-                                  icon: Icons.qr_code_2_outlined,
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.packagedBarcode,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: SecondaryButton(
-                                  label: 'Label',
-                                  icon: Icons.document_scanner_outlined,
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.packagedLabel,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Meal photo or packaged food — choose inside Scan.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(height: 22),
                           SectionHeader(
