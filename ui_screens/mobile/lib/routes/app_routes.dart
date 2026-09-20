@@ -12,8 +12,11 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/result/food_result_screen.dart';
 import '../screens/scan/scan_screen.dart';
 import '../screens/scan/scanning_screen.dart';
+import '../screens/search/food_compare_screen.dart';
+import '../screens/search/food_search_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../models/food_item.dart';
+import '../models/food_search_item.dart';
 import '../models/nutrition_info.dart';
 import '../models/packaged_food_analysis.dart';
 import '../models/scan_image_args.dart';
@@ -32,6 +35,8 @@ class AppRoutes {
   static const String packagedBarcode = '/packaged-barcode';
   static const String packagedLabel = '/packaged-label';
   static const String packagedResult = '/packaged-result';
+  static const String foodSearch = '/food-search';
+  static const String foodCompare = '/food-compare';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -70,6 +75,18 @@ class AppRoutes {
       case packagedResult:
         final analysis = settings.arguments as PackagedFoodAnalysis;
         return _slide(PackagedResultScreen(analysis: analysis), settings);
+      case foodSearch:
+        final initialQuery = settings.arguments as String?;
+        return _slide(
+          FoodSearchScreen(initialQuery: initialQuery),
+          settings,
+        );
+      case foodCompare:
+        final args = settings.arguments as ({FoodSearchItem a, FoodSearchItem b});
+        return _slide(
+          FoodCompareScreen(left: args.a, right: args.b),
+          settings,
+        );
       default:
         return _fade(
           Scaffold(

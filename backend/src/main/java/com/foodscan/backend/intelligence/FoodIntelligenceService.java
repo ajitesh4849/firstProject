@@ -444,24 +444,35 @@ public class FoodIntelligenceService {
         String blob = name + " " + categories;
         List<AlternativeDto> list = new ArrayList<>();
 
-        if (contains(blob, "chip", "crisp", "namkeen", "bhujia", "snack")) {
+        if (contains(blob, "chip", "crisp", "namkeen", "bhujia", "kurkure", "snack", "popcorn")) {
             list.add(new AlternativeDto("Roasted chana", "Crunchy, higher protein, shorter ingredient list."));
-            list.add(new AlternativeDto("Air-popped popcorn", "Lower energy density than most fried chips."));
-            list.add(new AlternativeDto("Plain mixed nuts (unsalted)", "More satiety per handful — watch portion."));
-        } else if (contains(blob, "cola", "soda", "soft drink", "beverage", "juice drink")) {
+            list.add(new AlternativeDto("Air-popped popcorn (plain)", "Lower energy density than most fried chips."));
+            list.add(new AlternativeDto("Sprouts chaat", "Fibre + protein without frying oil."));
+        } else if (contains(blob, "cola", "soda", "soft drink", "beverage", "juice drink", "frooti", "maaza")) {
             list.add(new AlternativeDto("Sparkling water", "Zero sugar alternative with fizz."));
             list.add(new AlternativeDto("Unsweetened buttermilk (chaas)", "More filling than sugary soft drinks."));
             list.add(new AlternativeDto("Fresh lime water (less sugar)", "Flavor with controllable sweetness."));
-        } else if (contains(blob, "noodle", "ramen", "instant")) {
+        } else if (contains(blob, "noodle", "ramen", "instant", "maggi", "yippee")) {
             list.add(new AlternativeDto("Whole-grain noodles + vegetables", "More fibre; skip or halve flavor sachet."));
+            list.add(new AlternativeDto("Poha or upma at home", "Familiar Indian comfort with less sodium."));
             list.add(new AlternativeDto("Homemade veg stir-fry", "Lower sodium than most instant packs."));
-        } else if (contains(blob, "biscuit", "cookie", "chocolate", "candy", "sweet")) {
+        } else if (contains(blob, "biscuit", "cookie", "chocolate", "candy", "sweet", "bourbon", "parle")) {
+            list.add(new AlternativeDto("Fruit + a handful of nuts", "Fibre and protein instead of refined biscuits."));
             list.add(new AlternativeDto("Dark chocolate (high cocoa)", "Usually less sugar; keep to a small piece."));
-            list.add(new AlternativeDto("Fruit + nuts", "Fibre and protein instead of refined snack biscuits."));
-            list.add(new AlternativeDto("Lower-sugar digestive / oats biscuit", "Compare sugar per 100g on the label."));
-        } else if (contains(blob, "cereal", "breakfast", "muesli")) {
+            list.add(new AlternativeDto("Roasted makhana", "Light crunch when you want a packaged-style snack."));
+        } else if (contains(blob, "cereal", "breakfast", "muesli", "chocos", "corn flakes", "oats")) {
             list.add(new AlternativeDto("Unsweetened oats", "Add fruit yourself to control sugar."));
             list.add(new AlternativeDto("High-fibre muesli (no candy bits)", "More fibre, fewer chocolate coatings."));
+            list.add(new AlternativeDto("Curd + fruit bowl", "Protein-forward breakfast without cereal sugar."));
+        } else if (contains(blob, "ketchup", "sauce", "jam", "spread", "nutella")) {
+            list.add(new AlternativeDto("Fresh tomato / homemade chutney", "Far less added sugar and preservatives."));
+            list.add(new AlternativeDto("Peanut butter (no added sugar)", "More protein if you want a spread."));
+        } else if (contains(blob, "bread", "bakery")) {
+            list.add(new AlternativeDto("100% whole wheat / multigrain bread", "More fibre than refined maida loaves."));
+            list.add(new AlternativeDto("Roti or phulka", "Typically less salt and fewer additives."));
+        } else if (contains(blob, "butter", "cheese", "dairy")) {
+            list.add(new AlternativeDto("Low-fat curd / Greek-style dahi", "Protein with less saturated fat per spoon."));
+            list.add(new AlternativeDto("Paneer (homemade or fresh)", "Higher protein if you need dairy satiety."));
         } else {
             list.add(new AlternativeDto("Short-ingredient whole-food option", "Prefer recognizable ingredients near the top of the list."));
             list.add(new AlternativeDto("Lower sugar / salt sibling product", "Compare per 100g values side by side."));

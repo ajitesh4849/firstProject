@@ -19,10 +19,19 @@ class PackagedResultScreen extends StatefulWidget {
 }
 
 class _PackagedResultScreenState extends State<PackagedResultScreen> {
+  static const List<({String label, int grams})> _servings = [
+    (label: '30g', grams: 30),
+    (label: '50g', grams: 50),
+    (label: '100g', grams: 100),
+  ];
+
   late PackagedFoodAnalysis _analysis;
   late final TextEditingController _brandController;
   bool _saving = false;
+  bool _adding = false;
+  bool _added = false;
   String? _saveMessage;
+  int _servingGrams = 50;
 
   @override
   void initState() {
@@ -35,6 +44,38 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
   void dispose() {
     _brandController.dispose();
     super.dispose();
+  }
+
+  Future<void> _addToToday() async {
+    if (_adding || _added || !_analysis.canAddToToday) return;
+    setState(() => _adding = true);
+    try {
+      await foodApi.addMeal(_analysis.toServing(_servingGrams));
+      if (!mounted) return;
+      setState(() {
+        _adding = false;
+        _added = true;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _adding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _adding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add to Today')),
+      );
+    }
   }
 
   bool get _brandMissing => _brandController.text.trim().isEmpty;
@@ -391,6 +432,110 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                         ],
                       ),
                     ),
+                    if (_analysis.allergyWarnings.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Matches your preferences',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      ..._analysis.allergyWarnings.map(
+                        (warning) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: AppCard(
+                            elevated: false,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.dangerSoft,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadii.md),
+                                  ),
+                                  child: const Icon(
+                                    Icons.health_and_safety_outlined,
+                                    color: AppColors.danger,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        warning.title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(color: AppColors.danger),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        warning.detail,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (_analysis.canAddToToday) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Log a serving',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      AppCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _servings.map((option) {
+                                final selected =
+                                    _servingGrams == option.grams;
+                                return ChoiceChip(
+                                  label: Text(option.label),
+                                  selected: selected,
+                                  onSelected: (_) {
+                                    setState(() => _servingGrams = option.grams);
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            Builder(
+                              builder: (context) {
+                                final serving =
+                                    _analysis.toServing(_servingGrams);
+                                return Text(
+                                  '${serving.calories} kcal · P ${serving.proteinGrams}g · C ${serving.carbsGrams}g · F ${serving.fatGrams}g',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.primaryDark,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (_analysis.intelligence != null) ...[
                       const SizedBox(height: 16),
                       FoodIntelligenceCard(
@@ -458,39 +603,58 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                       ),
                     const SizedBox(height: 8),
                     Text(
-                      'Healthier swaps',
+                      'Smarter swaps',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 10),
-                    AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final swap in _analysis.healthierSwaps) ...[
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.eco_outlined,
-                                  color: AppColors.success,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    swap,
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (swap != _analysis.healthierSwaps.last)
-                              const SizedBox(height: 10),
-                          ],
-                        ],
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Practical upgrades — not medical advice.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    const SizedBox(height: 10),
+                    ...List.generate(_analysis.healthierSwaps.length, (index) {
+                      final swap = _analysis.healthierSwaps[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: AppCard(
+                          elevated: false,
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD1FADF),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadii.full),
+                                ),
+                                child: Text(
+                                  '${index + 1}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  swap,
+                                  style:
+                                      Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                     ],
                     if ((_analysis.ingredients.isNotEmpty) ||
                         (_analysis.ingredientsText != null &&
@@ -605,9 +769,20 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_analysis.canSaveToCatalog) ...[
+                  if (_analysis.canAddToToday) ...[
                     PrimaryButton(
-                      label: 'Add to FoodScan catalog',
+                      label: _added ? 'Added to Today' : 'Add to Today',
+                      icon: _added
+                          ? Icons.check_rounded
+                          : Icons.add_circle_outline_rounded,
+                      isLoading: _adding,
+                      onPressed: _adding || _added ? null : _addToToday,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (_analysis.canSaveToCatalog) ...[
+                    SecondaryButton(
+                      label: 'Save to catalog',
                       icon: Icons.bookmark_add_outlined,
                       isLoading: _saving,
                       onPressed: _saving ? null : _saveToCatalog,
@@ -616,7 +791,7 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                     Text(
                       _analysis.isFromLabelPhoto
                           ? 'Save after a label photo so the next barcode scan finds this product locally.'
-                          : 'Optional: save this Open Food Facts product locally for faster scans next time.',
+                          : 'Optional: save locally for faster scans next time.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     if (_saveMessage != null) ...[
@@ -642,19 +817,30 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                     ),
                     const SizedBox(height: 10),
                   ],
-                  PrimaryButton(
-                    label: 'Scan another package',
-                    icon: Icons.qr_code_scanner_rounded,
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.packagedBarcode,
-                      );
-                    },
-                  ),
+                  if (!_analysis.canAddToToday)
+                    PrimaryButton(
+                      label: 'Scan another package',
+                      icon: Icons.qr_code_scanner_rounded,
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.packagedBarcode,
+                        );
+                      },
+                    )
+                  else
+                    SecondaryButton(
+                      label: 'Scan another package',
+                      icon: Icons.qr_code_scanner_rounded,
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.packagedBarcode,
+                        );
+                      },
+                    ),
                   const SizedBox(height: 10),
-                  SecondaryButton(
-                    label: 'Back to Scan',
+                  TextButton(
                     onPressed: () {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
@@ -664,6 +850,7 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                             route.isFirst,
                       );
                     },
+                    child: const Text('Back to Scan'),
                   ),
                 ],
               ),

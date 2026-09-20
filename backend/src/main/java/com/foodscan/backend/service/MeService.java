@@ -13,6 +13,7 @@ import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
 import com.foodscan.backend.nutrition.DailyCalorieGoalCalculator;
 import com.foodscan.backend.nutrition.DailyMacroGoals;
+import com.foodscan.backend.nutrition.DailyTipBuilder;
 import com.foodscan.backend.repository.MealEntryRepository;
 import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
@@ -83,6 +84,19 @@ public class MeService {
         List<MealDto> mealDtos = meals.stream()
                 .map(meal -> new MealDto(meal.getFoodName(), meal.getCalories()))
                 .toList();
+        String goal = user.getGoal() == null ? "LOSE_WEIGHT" : user.getGoal();
+        String tip = DailyTipBuilder.build(
+                consumed,
+                user.getDailyGoalKcal(),
+                protein,
+                targets.proteinGrams(),
+                fibre,
+                targets.fibreGrams(),
+                sugar,
+                targets.sugarGrams(),
+                meals.size(),
+                goal
+        );
         return new TodayResponse(
                 consumed,
                 user.getDailyGoalKcal(),
@@ -96,7 +110,8 @@ public class MeService {
                 targets.fibreGrams(),
                 round1(sugar),
                 targets.sugarGrams(),
-                user.getGoal() == null ? "LOSE_WEIGHT" : user.getGoal(),
+                goal,
+                tip,
                 mealDtos
         );
     }
@@ -152,6 +167,9 @@ public class MeService {
         return toProfileResponse(requireUser());
     }
 
+    private static final Set<String> ALLOWED_DIETS = Set.of("NONE", "VEGETARIAN", "VEGAN");
+    private static final Set<String> ALLOWED_ALLERGENS = Set.of("PEANUT", "NUT", "DAIRY", "GLUTEN");
+
     @Transactional
     public ProfileResponse updateProfile(UpdateProfileRequest request) {
         UserAccount user = requireUser();
@@ -159,6 +177,8 @@ public class MeService {
         String goal = normalize(request.goal());
         String gender = normalize(request.gender());
         String activityLevel = normalize(request.activityLevel());
+        String diet = normalize(request.dietPreference() == null ? "NONE" : request.dietPreference());
+        String allergens = normalizeAllergens(request.allergens());
 
         if (!ALLOWED_GOALS.contains(goal)) {
             throw new BadRequestException("Invalid goal. Use LOSE_WEIGHT, MAINTAIN, or GAIN_MUSCLE");
@@ -171,6 +191,9 @@ public class MeService {
                     "Invalid activity level. Use SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, or VERY_ACTIVE"
             );
         }
+        if (!ALLOWED_DIETS.contains(diet)) {
+            throw new BadRequestException("Invalid diet preference. Use NONE, VEGETARIAN, or VEGAN");
+        }
 
         user.setAge(request.age());
         user.setWeightKg(request.weightKg());
@@ -178,6 +201,8 @@ public class MeService {
         user.setGender(gender);
         user.setActivityLevel(activityLevel);
         user.setGoal(goal);
+        user.setDietPreference(diet);
+        user.setAllergens(allergens);
         user.setDailyGoalKcal(
                 dailyCalorieGoalCalculator.calculate(
                         request.age(),
@@ -199,6 +224,10 @@ public class MeService {
         String activity = user.getActivityLevel() == null || user.getActivityLevel().isBlank()
                 ? "SEDENTARY"
                 : user.getActivityLevel();
+        String diet = user.getDietPreference() == null || user.getDietPreference().isBlank()
+                ? "NONE"
+                : user.getDietPreference();
+        String allergens = user.getAllergens() == null ? "" : user.getAllergens();
         return new ProfileResponse(
                 user.getAge(),
                 user.getWeightKg(),
@@ -206,7 +235,9 @@ public class MeService {
                 gender,
                 activity,
                 user.getGoal(),
-                user.getDailyGoalKcal()
+                user.getDailyGoalKcal(),
+                diet,
+                allergens
         );
     }
 
@@ -218,6 +249,21 @@ public class MeService {
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toUpperCase(Locale.ENGLISH);
+    }
+
+    private String normalizeAllergens(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String[] parts = raw.split(",");
+        List<String> cleaned = new ArrayList<>();
+        for (String part : parts) {
+            String p = normalize(part);
+            if (ALLOWED_ALLERGENS.contains(p) && !cleaned.contains(p)) {
+                cleaned.add(p);
+            }
+        }
+        return String.join(",", cleaned);
     }
 
     private static double nz(Double value) {

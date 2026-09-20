@@ -10,6 +10,7 @@ import com.foodscan.backend.entity.UserAccount;
 import com.foodscan.backend.exception.BadRequestException;
 import com.foodscan.backend.exception.NotFoundException;
 import com.foodscan.backend.intelligence.FoodIntelligenceService;
+import com.foodscan.backend.packaged.DietaryWarningAnalyzer;
 import com.foodscan.backend.packaged.OpenFoodFactsClient;
 import com.foodscan.backend.packaged.OpenFoodFactsProduct;
 import com.foodscan.backend.packaged.PackagedFoodRiskAnalyzer;
@@ -46,6 +47,7 @@ public class PackagedFoodService {
     private final CurrentUserService currentUserService;
     private final UserAccountRepository userAccountRepository;
     private final FoodIntelligenceService foodIntelligenceService;
+    private final DietaryWarningAnalyzer dietaryWarningAnalyzer;
 
     public PackagedFoodService(
             OpenFoodFactsClient openFoodFactsClient,
@@ -54,7 +56,8 @@ public class PackagedFoodService {
             PackagedProductSeedRepository seedRepository,
             CurrentUserService currentUserService,
             UserAccountRepository userAccountRepository,
-            FoodIntelligenceService foodIntelligenceService
+            FoodIntelligenceService foodIntelligenceService,
+            DietaryWarningAnalyzer dietaryWarningAnalyzer
     ) {
         this.openFoodFactsClient = openFoodFactsClient;
         this.riskAnalyzer = riskAnalyzer;
@@ -63,6 +66,7 @@ public class PackagedFoodService {
         this.currentUserService = currentUserService;
         this.userAccountRepository = userAccountRepository;
         this.foodIntelligenceService = foodIntelligenceService;
+        this.dietaryWarningAnalyzer = dietaryWarningAnalyzer;
     }
 
     public PackagedFoodResponse analyzeBarcode(String barcode) {
@@ -191,6 +195,13 @@ public class PackagedFoodService {
             swaps = analysis.healthierSwaps();
         }
 
+        UserAccount user = currentUserAccount();
+        var allergyWarnings = dietaryWarningAnalyzer.warnings(
+                product.ingredientsText(),
+                user == null ? "NONE" : user.getDietPreference(),
+                user == null ? "" : user.getAllergens()
+        );
+
         return new PackagedFoodResponse(
                 product.barcode(),
                 product.productName(),
@@ -215,19 +226,23 @@ public class PackagedFoodService {
                 source,
                 canSaveToCatalog,
                 analysis.ingredients(),
-                intelligence
+                intelligence,
+                allergyWarnings
         );
     }
 
-    private String currentUserGoal() {
+    private UserAccount currentUserAccount() {
         try {
             UUID userId = currentUserService.requireUserId();
-            return userAccountRepository.findById(userId)
-                    .map(UserAccount::getGoal)
-                    .orElse("LOSE_WEIGHT");
+            return userAccountRepository.findById(userId).orElse(null);
         } catch (RuntimeException ex) {
-            return "LOSE_WEIGHT";
+            return null;
         }
+    }
+
+    private String currentUserGoal() {
+        UserAccount user = currentUserAccount();
+        return user == null || user.getGoal() == null ? "LOSE_WEIGHT" : user.getGoal();
     }
 
     private static String cleanBarcode(String barcode) {

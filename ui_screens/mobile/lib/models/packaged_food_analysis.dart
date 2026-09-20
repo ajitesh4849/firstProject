@@ -1,4 +1,5 @@
 import 'food_intelligence.dart';
+import 'nutrition_info.dart';
 
 class PackagedRiskFlag {
   const PackagedRiskFlag({
@@ -47,6 +48,26 @@ class PackagedIngredientMark {
   }
 }
 
+class AllergyWarning {
+  const AllergyWarning({
+    required this.code,
+    required this.title,
+    required this.detail,
+  });
+
+  final String code;
+  final String title;
+  final String detail;
+
+  factory AllergyWarning.fromJson(Map<String, dynamic> json) {
+    return AllergyWarning(
+      code: json['code']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      detail: json['detail']?.toString() ?? '',
+    );
+  }
+}
+
 class PackagedFoodAnalysis {
   const PackagedFoodAnalysis({
     required this.barcode,
@@ -73,6 +94,7 @@ class PackagedFoodAnalysis {
     this.canSaveToCatalog = false,
     this.ingredients = const [],
     this.intelligence,
+    this.allergyWarnings = const [],
   });
 
   final String barcode;
@@ -99,9 +121,40 @@ class PackagedFoodAnalysis {
   final bool canSaveToCatalog;
   final List<PackagedIngredientMark> ingredients;
   final FoodIntelligence? intelligence;
+  final List<AllergyWarning> allergyWarnings;
 
   bool get isFromLabelPhoto => source == 'LABEL_PHOTO';
   bool get isFromCatalog => source == 'SEED';
+
+  /// True when we have enough per-100g data to log a serving.
+  bool get canAddToToday =>
+      energyKcalPer100g != null ||
+      proteinPer100g != null ||
+      carbsPer100g != null ||
+      fatPer100g != null;
+
+  NutritionInfo toServing(int grams) {
+    final factor = grams / 100.0;
+    final brandLabel = brand?.trim();
+    final name = (brandLabel != null && brandLabel.isNotEmpty)
+        ? '$productName ($brandLabel)'
+        : productName;
+    return NutritionInfo(
+      foodName: name,
+      portionGrams: grams,
+      calories: ((energyKcalPer100g ?? 0) * factor).round(),
+      proteinGrams: _r1((proteinPer100g ?? 0) * factor),
+      carbsGrams: _r1((carbsPer100g ?? 0) * factor),
+      fatGrams: _r1((fatPer100g ?? 0) * factor),
+      fibreGrams: _r1((fibrePer100g ?? 0) * factor),
+      sugarGrams: _r1((sugarPer100g ?? 0) * factor),
+      sodiumMg: _r1((sodiumMgPer100g ?? ((saltPer100g ?? 0) * 400)) * factor),
+      estimated: true,
+      intelligence: intelligence,
+    );
+  }
+
+  static double _r1(double v) => double.parse(v.toStringAsFixed(1));
 
   PackagedFoodAnalysis copyWith({
     String? barcode,
@@ -128,6 +181,7 @@ class PackagedFoodAnalysis {
     bool? canSaveToCatalog,
     List<PackagedIngredientMark>? ingredients,
     FoodIntelligence? intelligence,
+    List<AllergyWarning>? allergyWarnings,
   }) {
     return PackagedFoodAnalysis(
       barcode: barcode ?? this.barcode,
@@ -154,6 +208,7 @@ class PackagedFoodAnalysis {
       canSaveToCatalog: canSaveToCatalog ?? this.canSaveToCatalog,
       ingredients: ingredients ?? this.ingredients,
       intelligence: intelligence ?? this.intelligence,
+      allergyWarnings: allergyWarnings ?? this.allergyWarnings,
     );
   }
 
@@ -161,6 +216,7 @@ class PackagedFoodAnalysis {
     final flagsJson = json['flags'] as List<dynamic>? ?? [];
     final swapsJson = json['healthierSwaps'] as List<dynamic>? ?? [];
     final ingredientsJson = json['ingredients'] as List<dynamic>? ?? [];
+    final warningsJson = json['allergyWarnings'] as List<dynamic>? ?? [];
     final intelligenceJson = json['intelligence'] as Map<String, dynamic>?;
     return PackagedFoodAnalysis(
       barcode: json['barcode']?.toString() ?? '',
@@ -196,7 +252,10 @@ class PackagedFoodAnalysis {
       intelligence: intelligenceJson == null
           ? null
           : FoodIntelligence.fromJson(intelligenceJson),
+      allergyWarnings: warningsJson
+          .whereType<Map<String, dynamic>>()
+          .map(AllergyWarning.fromJson)
+          .toList(),
     );
   }
 }
-

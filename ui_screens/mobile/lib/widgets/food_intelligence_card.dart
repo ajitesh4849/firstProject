@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/food_intelligence.dart';
+import '../routes/app_routes.dart';
 import '../utils/app_theme.dart';
 import 'app_card.dart';
 
@@ -109,28 +110,104 @@ class FoodIntelligenceCard extends StatelessWidget {
           ),
         ],
         if (intelligence.alternatives.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text('Better alternatives', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ...intelligence.alternatives.map(
-            (alt) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: AppCard(
-                elevated: false,
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(alt.name, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text(alt.reason, style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
+          const SizedBox(height: 16),
+          Text('Smarter swaps', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Practical upgrades — not medical advice.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(intelligence.alternatives.length, (index) {
+            final alt = intelligence.alternatives[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _SwapTile(
+                index: index + 1,
+                name: alt.name,
+                reason: alt.reason,
+                onFind: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.foodSearch,
+                    arguments: alt.name,
+                  );
+                },
               ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+}
+
+class _SwapTile extends StatelessWidget {
+  const _SwapTile({
+    required this.index,
+    required this.name,
+    required this.reason,
+    required this.onFind,
+  });
+
+  final int index;
+  final String name;
+  final String reason;
+  final VoidCallback onFind;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      elevated: false,
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD1FADF),
+              borderRadius: BorderRadius.circular(AppRadii.full),
+            ),
+            child: Text(
+              '$index',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  reason,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Search this food',
+            onPressed: onFind,
+            icon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.primary,
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 }

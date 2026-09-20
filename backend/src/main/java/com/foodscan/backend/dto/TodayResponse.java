@@ -16,6 +16,7 @@ public record TodayResponse(
         double consumedSugarGrams,
         double goalSugarGrams,
         String goal,
+        String dailyTip,
         List<MealDto> meals
 ) {
 }

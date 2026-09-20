@@ -28,11 +28,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ProfileGender _gender = ProfileGender.unspecified;
   ActivityLevel _activityLevel = ActivityLevel.sedentary;
   FitnessGoal _goal = FitnessGoal.loseWeight;
+  DietPreference _dietPreference = DietPreference.none;
+  final Set<String> _allergens = {};
   bool _loading = true;
   bool _isSaving = false;
   bool _saved = false;
   String? _error;
   int _dailyGoalKcal = 2200;
+
+  static const List<({String code, String label})> _allergenOptions = [
+    (code: 'PEANUT', label: 'Peanut'),
+    (code: 'NUT', label: 'Tree nuts'),
+    (code: 'DAIRY', label: 'Dairy'),
+    (code: 'GLUTEN', label: 'Gluten'),
+  ];
 
   @override
   void initState() {
@@ -67,6 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _gender = profile.gender;
         _activityLevel = profile.activityLevel;
         _goal = profile.goal;
+        _dietPreference = profile.dietPreference;
+        _allergens
+          ..clear()
+          ..addAll(profile.allergens);
         _dailyGoalKcal = profile.dailyGoalKcal;
         _loading = false;
       });
@@ -100,6 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           gender: _gender,
           activityLevel: _activityLevel,
           goal: _goal,
+          dietPreference: _dietPreference,
+          allergens: Set<String>.from(_allergens),
         ),
       );
       if (!mounted) return;
@@ -110,6 +125,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _gender = updated.gender;
         _activityLevel = updated.activityLevel;
         _goal = updated.goal;
+        _dietPreference = updated.dietPreference;
+        _allergens
+          ..clear()
+          ..addAll(updated.allergens);
       });
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -365,9 +384,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         }),
                               );
                             }),
+                            const SizedBox(height: 12),
+                            const SectionHeader(
+                              title: 'Diet preference',
+                              subtitle: 'Used for packaged food warnings',
+                            ),
+                            const SizedBox(height: 12),
+                            ...DietPreference.values.map((diet) {
+                              return _choiceCard(
+                                selected: _dietPreference == diet,
+                                title: diet.label,
+                                onTap: _isSaving
+                                    ? null
+                                    : () => setState(() {
+                                          _dietPreference = diet;
+                                          _saved = false;
+                                        }),
+                              );
+                            }),
+                            const SizedBox(height: 12),
+                            const SectionHeader(
+                              title: 'Allergies',
+                              subtitle: 'Flagged when ingredients match',
+                            ),
+                            const SizedBox(height: 12),
+                            AppCard(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _allergenOptions.map((option) {
+                                  final selected =
+                                      _allergens.contains(option.code);
+                                  return FilterChip(
+                                    label: Text(option.label),
+                                    selected: selected,
+                                    onSelected: _isSaving
+                                        ? null
+                                        : (value) {
+                                            setState(() {
+                                              if (value) {
+                                                _allergens.add(option.code);
+                                              } else {
+                                                _allergens.remove(option.code);
+                                              }
+                                              _saved = false;
+                                            });
+                                          },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Text(
-                              'Gender, activity, and goal adjust your daily calorie target on Home. Tracking only — not medical advice.',
+                              'Gender, activity, and goal adjust your daily calorie target on Home. Diet and allergies only affect packaged warnings — not medical advice.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 24),

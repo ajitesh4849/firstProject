@@ -41,6 +41,14 @@ public class UserAccount {
     @Column(nullable = false)
     private Integer dailyGoalKcal = 2200;
 
+    /** NONE | VEGETARIAN | VEGAN */
+    @Column(length = 32)
+    private String dietPreference = "NONE";
+
+    /** Comma-separated: PEANUT,NUT,DAIRY,GLUTEN */
+    @Column(length = 128)
+    private String allergens = "";
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -123,6 +131,22 @@ public class UserAccount {
 
     public void setDailyGoalKcal(Integer dailyGoalKcal) {
         this.dailyGoalKcal = dailyGoalKcal;
+    }
+
+    public String getDietPreference() {
+        return dietPreference;
+    }
+
+    public void setDietPreference(String dietPreference) {
+        this.dietPreference = dietPreference;
+    }
+
+    public String getAllergens() {
+        return allergens;
+    }
+
+    public void setAllergens(String allergens) {
+        this.allergens = allergens;
     }
 
     public Instant getCreatedAt() {

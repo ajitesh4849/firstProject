@@ -109,6 +109,15 @@ class ApiClient {
     });
   }
 
+  Future<List<dynamic>> getJsonList(String path) {
+    return _withNetworkRetry(() async {
+      final response = await _http
+          .get(_uri(path), headers: _headers(json: false))
+          .timeout(ApiConfig.timeout);
+      return _decodeList(response);
+    });
+  }
+
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, dynamic>? body,
@@ -134,7 +143,7 @@ class ApiClient {
           .put(
             _uri(path),
             headers: _headers(),
-            body: jsonEncode(body ?? {}),
+            body: jsonEncode(body),
           )
           .timeout(ApiConfig.timeout);
       return _decode(response);
@@ -186,6 +195,32 @@ class ApiClient {
       return body ?? <String, dynamic>{};
     }
 
+    return _throwHttpError(response, body);
+  }
+
+  Future<List<dynamic>> _decodeList(http.Response response) async {
+    List<dynamic>? body;
+    Map<String, dynamic>? errorBody;
+    if (response.body.isNotEmpty) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is List) {
+        body = decoded;
+      } else if (decoded is Map<String, dynamic>) {
+        errorBody = decoded;
+      }
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body ?? const [];
+    }
+
+    return _throwHttpError(response, errorBody);
+  }
+
+  Future<Never> _throwHttpError(
+    http.Response response,
+    Map<String, dynamic>? body,
+  ) async {
     if (response.statusCode == 401 || response.statusCode == 403) {
       await _handleUnauthorized();
     }

@@ -29,6 +29,7 @@ public record PackagedFoodResponse(
         /** True when result can be saved into the local catalog (valid barcode). */
         boolean canSaveToCatalog,
         List<PackagedIngredientMarkDto> ingredients,
-        FoodIntelligenceDto intelligence
+        FoodIntelligenceDto intelligence,
+        List<AllergyWarningDto> allergyWarnings
 ) {
 }

@@ -1,3 +1,44 @@
+enum DietPreference {
+  none,
+  vegetarian,
+  vegan,
+}
+
+extension DietPreferenceX on DietPreference {
+  String get label {
+    switch (this) {
+      case DietPreference.none:
+        return 'No preference';
+      case DietPreference.vegetarian:
+        return 'Vegetarian';
+      case DietPreference.vegan:
+        return 'Vegan';
+    }
+  }
+
+  String get apiValue {
+    switch (this) {
+      case DietPreference.none:
+        return 'NONE';
+      case DietPreference.vegetarian:
+        return 'VEGETARIAN';
+      case DietPreference.vegan:
+        return 'VEGAN';
+    }
+  }
+
+  static DietPreference fromApi(String? value) {
+    switch (value?.toUpperCase()) {
+      case 'VEGETARIAN':
+        return DietPreference.vegetarian;
+      case 'VEGAN':
+        return DietPreference.vegan;
+      default:
+        return DietPreference.none;
+    }
+  }
+}
+
 enum FitnessGoal {
   loseWeight,
   maintain,
@@ -80,6 +121,8 @@ class UserProfile {
     required this.activityLevel,
     required this.goal,
     this.dailyGoalKcal = 2200,
+    this.dietPreference = DietPreference.none,
+    this.allergens = const {},
   });
 
   final int age;
@@ -89,6 +132,8 @@ class UserProfile {
   final ActivityLevel activityLevel;
   final FitnessGoal goal;
   final int dailyGoalKcal;
+  final DietPreference dietPreference;
+  final Set<String> allergens;
 
   UserProfile copyWith({
     int? age,
@@ -98,6 +143,8 @@ class UserProfile {
     ActivityLevel? activityLevel,
     FitnessGoal? goal,
     int? dailyGoalKcal,
+    DietPreference? dietPreference,
+    Set<String>? allergens,
   }) {
     return UserProfile(
       age: age ?? this.age,
@@ -107,6 +154,8 @@ class UserProfile {
       activityLevel: activityLevel ?? this.activityLevel,
       goal: goal ?? this.goal,
       dailyGoalKcal: dailyGoalKcal ?? this.dailyGoalKcal,
+      dietPreference: dietPreference ?? this.dietPreference,
+      allergens: allergens ?? this.allergens,
     );
   }
 }

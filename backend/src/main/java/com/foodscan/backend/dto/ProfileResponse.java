@@ -7,6 +7,8 @@ public record ProfileResponse(
         String gender,
         String activityLevel,
         String goal,
-        int dailyGoalKcal
+        int dailyGoalKcal,
+        String dietPreference,
+        String allergens
 ) {
 }

@@ -229,12 +229,67 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.pushNamed(context, AppRoutes.scan);
                             },
                           ),
+                          const SizedBox(height: 10),
+                          SecondaryButton(
+                            label: 'Search foods',
+                            icon: Icons.search_rounded,
+                            onPressed: () {
+                              Navigator.pushNamed(context, AppRoutes.foodSearch);
+                            },
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Meal photo or packaged food — choose inside Scan.',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
+                          if (today != null &&
+                              today.dailyTip.trim().isNotEmpty) ...[
+                            const SizedBox(height: 22),
+                            AppCard(
+                              elevated: false,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySoft,
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadii.md),
+                                    ),
+                                    child: const Icon(
+                                      Icons.lightbulb_outline_rounded,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Today’s tip',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          today.dailyTip,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 22),
                           SectionHeader(
                             title: 'Meals',

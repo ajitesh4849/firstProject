@@ -1,6 +1,7 @@
 import '../models/daily_summary.dart';
 import '../models/food_intelligence.dart';
 import '../models/food_item.dart';
+import '../models/food_search_item.dart';
 import '../models/ingredient_awareness.dart';
 import '../models/meal.dart';
 import '../models/nutrition_info.dart';
@@ -192,7 +193,45 @@ class FoodApiService {
       consumedSugarGrams: (body['consumedSugarGrams'] as num?)?.toDouble() ?? 0,
       goalSugarGrams: (body['goalSugarGrams'] as num?)?.toDouble() ?? 45,
       goal: body['goal']?.toString() ?? 'LOSE_WEIGHT',
+      dailyTip: body['dailyTip']?.toString() ?? '',
       meals: meals,
+    );
+  }
+
+  Future<List<FoodSearchItem>> searchFoods(String query, {int limit = 20}) async {
+    final q = Uri.encodeQueryComponent(query.trim());
+    final list = await _client.getJsonList(
+      '/api/v1/foods/search?q=$q&limit=$limit',
+    );
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(FoodSearchItem.fromJson)
+        .toList();
+  }
+
+  Future<NutritionInfo> fetchFoodNutrition({
+    required String name,
+    int portionGrams = 100,
+  }) async {
+    final encoded = Uri.encodeQueryComponent(name.trim());
+    final body = await _client.getJson(
+      '/api/v1/foods/nutrition?name=$encoded&portionGrams=$portionGrams',
+    );
+    final intelligenceJson = body['intelligence'] as Map<String, dynamic>?;
+    return NutritionInfo(
+      foodName: body['foodName']?.toString() ?? name,
+      portionGrams: (body['portionGrams'] as num?)?.toInt() ?? portionGrams,
+      calories: (body['calories'] as num?)?.toInt() ?? 0,
+      proteinGrams: (body['proteinGrams'] as num?)?.toDouble() ?? 0,
+      carbsGrams: (body['carbsGrams'] as num?)?.toDouble() ?? 0,
+      fatGrams: (body['fatGrams'] as num?)?.toDouble() ?? 0,
+      fibreGrams: (body['fibreGrams'] as num?)?.toDouble() ?? 0,
+      sugarGrams: (body['sugarGrams'] as num?)?.toDouble() ?? 0,
+      sodiumMg: (body['sodiumMg'] as num?)?.toDouble() ?? 0,
+      estimated: body['estimated'] as bool? ?? true,
+      intelligence: intelligenceJson == null
+          ? null
+          : FoodIntelligence.fromJson(intelligenceJson),
     );
   }
 
@@ -229,6 +268,8 @@ class FoodApiService {
       activityLevel: _activityFromApi(body['activityLevel']?.toString()),
       goal: _goalFromApi(body['goal']?.toString()),
       dailyGoalKcal: (body['dailyGoalKcal'] as num?)?.toInt() ?? 2200,
+      dietPreference: DietPreferenceX.fromApi(body['dietPreference']?.toString()),
+      allergens: _allergensFromApi(body['allergens']?.toString()),
     );
   }
 
@@ -242,6 +283,8 @@ class FoodApiService {
         'gender': _genderToApi(profile.gender),
         'activityLevel': _activityToApi(profile.activityLevel),
         'goal': _goalToApi(profile.goal),
+        'dietPreference': profile.dietPreference.apiValue,
+        'allergens': profile.allergens.join(','),
       },
     );
     return UserProfile(
@@ -253,6 +296,8 @@ class FoodApiService {
       goal: _goalFromApi(body['goal']?.toString()),
       dailyGoalKcal:
           (body['dailyGoalKcal'] as num?)?.toInt() ?? profile.dailyGoalKcal,
+      dietPreference: DietPreferenceX.fromApi(body['dietPreference']?.toString()),
+      allergens: _allergensFromApi(body['allergens']?.toString()),
     );
   }
 
@@ -328,6 +373,15 @@ class FoodApiService {
         return 'VERY_ACTIVE';
     }
   }
+
+  Set<String> _allergensFromApi(String? value) {
+    if (value == null || value.trim().isEmpty) return {};
+    return value
+        .split(',')
+        .map((e) => e.trim().toUpperCase())
+        .where((e) => e.isNotEmpty)
+        .toSet();
+  }
 }
 
 class TodaySummary {
@@ -346,6 +400,7 @@ class TodaySummary {
     required this.goalSugarGrams,
     required this.goal,
     required this.meals,
+    this.dailyTip = '',
   });
 
   final int consumedKcal;
@@ -362,6 +417,7 @@ class TodaySummary {
   final double goalSugarGrams;
   final String goal;
   final List<Meal> meals;
+  final String dailyTip;
 }
 
 final foodApi = FoodApiService();
