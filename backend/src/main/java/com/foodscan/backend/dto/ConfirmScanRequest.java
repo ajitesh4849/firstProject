@@ -1,0 +1,10 @@
+package com.foodscan.backend.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record ConfirmScanRequest(
+        @NotBlank @Size(max = 120) String foodName,
+        Double confidence
+) {
+}

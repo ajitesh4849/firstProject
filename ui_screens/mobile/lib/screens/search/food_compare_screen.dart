@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/food_search_item.dart';
+import '../../models/comparable_food.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/primary_button.dart';
@@ -12,35 +12,56 @@ class FoodCompareScreen extends StatelessWidget {
     required this.right,
   });
 
-  final FoodSearchItem left;
-  final FoodSearchItem right;
+  final ComparableFood left;
+  final ComparableFood right;
 
-  String _fmt(num v) {
-    if (v is int) return '$v';
-    final d = v.toDouble();
-    if (d == d.roundToDouble()) return d.toStringAsFixed(0);
-    return d.toStringAsFixed(1);
+  String _fmt(double? v) {
+    if (v == null) return '—';
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(1);
   }
 
-  Widget _header(BuildContext context, FoodSearchItem item) {
+  Widget _header(BuildContext context, ComparableFood item) {
     return Expanded(
       child: Column(
         children: [
           Text(
-            item.name,
+            item.title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (item.subtitle != null && item.subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              item.subtitle!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
-            '${item.caloriesPer100g} kcal',
+            item.caloriesPer100g == null
+                ? 'kcal n/a'
+                : '${_fmt(item.caloriesPer100g)} kcal',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w700,
                 ),
           ),
+          if (item.scoreLabel != null && item.scoreLabel!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Score ${item.scoreLabel}',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
         ],
       ),
     );
@@ -49,18 +70,16 @@ class FoodCompareScreen extends StatelessWidget {
   Widget _row(
     BuildContext context, {
     required String label,
-    required String leftValue,
-    required String rightValue,
+    required double? leftValue,
+    required double? rightValue,
     bool highlightLower = false,
     bool highlightHigher = false,
   }) {
-    final leftNum = double.tryParse(leftValue);
-    final rightNum = double.tryParse(rightValue);
     Color? leftColor;
     Color? rightColor;
-    if (leftNum != null && rightNum != null && leftNum != rightNum) {
-      final leftWinsLower = leftNum < rightNum;
-      final leftWinsHigher = leftNum > rightNum;
+    if (leftValue != null && rightValue != null && leftValue != rightValue) {
+      final leftWinsLower = leftValue < rightValue;
+      final leftWinsHigher = leftValue > rightValue;
       if (highlightLower) {
         leftColor = leftWinsLower ? AppColors.success : null;
         rightColor = !leftWinsLower ? AppColors.success : null;
@@ -76,7 +95,7 @@ class FoodCompareScreen extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              leftValue,
+              _fmt(leftValue),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: leftColor ?? AppColors.textPrimary,
@@ -94,7 +113,7 @@ class FoodCompareScreen extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              rightValue,
+              _fmt(rightValue),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: rightColor ?? AppColors.textPrimary,
@@ -144,43 +163,50 @@ class FoodCompareScreen extends StatelessWidget {
                     _row(
                       context,
                       label: 'Calories',
-                      leftValue: _fmt(left.caloriesPer100g),
-                      rightValue: _fmt(right.caloriesPer100g),
+                      leftValue: left.caloriesPer100g,
+                      rightValue: right.caloriesPer100g,
                       highlightLower: true,
                     ),
                     _row(
                       context,
                       label: 'Protein g',
-                      leftValue: _fmt(left.proteinPer100g),
-                      rightValue: _fmt(right.proteinPer100g),
+                      leftValue: left.proteinPer100g,
+                      rightValue: right.proteinPer100g,
                       highlightHigher: true,
                     ),
                     _row(
                       context,
                       label: 'Carbs g',
-                      leftValue: _fmt(left.carbsPer100g),
-                      rightValue: _fmt(right.carbsPer100g),
+                      leftValue: left.carbsPer100g,
+                      rightValue: right.carbsPer100g,
                       highlightLower: true,
                     ),
                     _row(
                       context,
                       label: 'Fat g',
-                      leftValue: _fmt(left.fatPer100g),
-                      rightValue: _fmt(right.fatPer100g),
+                      leftValue: left.fatPer100g,
+                      rightValue: right.fatPer100g,
                       highlightLower: true,
                     ),
                     _row(
                       context,
                       label: 'Fibre g',
-                      leftValue: _fmt(left.fibrePer100g),
-                      rightValue: _fmt(right.fibrePer100g),
+                      leftValue: left.fibrePer100g,
+                      rightValue: right.fibrePer100g,
                       highlightHigher: true,
                     ),
                     _row(
                       context,
                       label: 'Sugar g',
-                      leftValue: _fmt(left.sugarPer100g),
-                      rightValue: _fmt(right.sugarPer100g),
+                      leftValue: left.sugarPer100g,
+                      rightValue: right.sugarPer100g,
+                      highlightLower: true,
+                    ),
+                    _row(
+                      context,
+                      label: 'Salt g',
+                      leftValue: left.saltPer100g,
+                      rightValue: right.saltPer100g,
                       highlightLower: true,
                     ),
                   ],
@@ -188,12 +214,12 @@ class FoodCompareScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Green marks the better side for each row (lower calories/sugar/fat/carbs, higher protein/fibre). Educational only.',
+                'Green marks the better side when both values exist. Missing values show as —. Educational only.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const Spacer(),
               SecondaryButton(
-                label: 'Back to search',
+                label: 'Done',
                 onPressed: () => Navigator.pop(context),
               ),
             ],

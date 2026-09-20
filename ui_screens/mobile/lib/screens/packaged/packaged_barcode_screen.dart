@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../models/comparable_food.dart';
+import '../../models/packaged_food_analysis.dart';
 import '../../routes/app_routes.dart';
 import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
@@ -10,7 +12,10 @@ import '../../utils/app_theme.dart';
 import '../../widgets/primary_button.dart';
 
 class PackagedBarcodeScreen extends StatefulWidget {
-  const PackagedBarcodeScreen({super.key});
+  const PackagedBarcodeScreen({super.key, this.compareWith});
+
+  /// When set, the next successful scan opens Compare against this product.
+  final PackagedFoodAnalysis? compareWith;
 
   @override
   State<PackagedBarcodeScreen> createState() => _PackagedBarcodeScreenState();
@@ -78,6 +83,26 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
     try {
       final result = await foodApi.analyzePackagedBarcode(cleaned);
       if (!mounted) return;
+      final held = widget.compareWith;
+      if (held != null) {
+        if (held.barcode == result.barcode) {
+          setState(() {
+            _busy = false;
+            _productNotFound = false;
+            _error = 'Scan a different package to compare.';
+          });
+          return;
+        }
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.foodCompare,
+          arguments: (
+            a: ComparableFood.fromPackaged(held),
+            b: ComparableFood.fromPackaged(result),
+          ),
+        );
+        return;
+      }
       Navigator.pushReplacementNamed(
         context,
         AppRoutes.packagedResult,
@@ -150,7 +175,11 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
     final showRetry = _error != null && !_busy;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Packaged food')),
+      appBar: AppBar(
+        title: Text(
+          widget.compareWith == null ? 'Packaged food' : 'Compare package',
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: AppSpacing.page,
@@ -158,12 +187,17 @@ class _PackagedBarcodeScreenState extends State<PackagedBarcodeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Scan a barcode',
+                widget.compareWith == null
+                    ? 'Scan a barcode'
+                    : 'Scan the second product',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 6),
               Text(
-                'We’ll look up the product by barcode. If it isn’t found, you can photograph the ingredients list instead.',
+                widget.compareWith == null
+                    ? 'We’ll look up the product by barcode. If it isn’t found, you can photograph the ingredients list instead.'
+                    : 'Comparing against ${widget.compareWith!.productName}'
+                        '${widget.compareWith!.brand != null && widget.compareWith!.brand!.trim().isNotEmpty ? ' (${widget.compareWith!.brand})' : ''}.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),

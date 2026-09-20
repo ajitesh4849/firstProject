@@ -6,6 +6,7 @@ import '../models/ingredient_awareness.dart';
 import '../models/meal.dart';
 import '../models/nutrition_info.dart';
 import '../models/packaged_food_analysis.dart';
+import '../models/scan_result.dart';
 import '../models/user_profile.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
@@ -46,7 +47,7 @@ class FoodApiService {
     await _client.setAccessToken(token);
   }
 
-  Future<FoodItem> createScan({
+  Future<ScanResult> createScan({
     List<int>? imageBytes,
     String filename = 'meal.jpg',
   }) async {
@@ -57,13 +58,41 @@ class FoodApiService {
       bytes: bytes,
       filename: filename,
     );
+    return ScanResult.fromJson(body);
+  }
 
+  Future<List<FoodCandidate>> matchFoodCandidates(
+    String query, {
+    int limit = 8,
+  }) async {
+    final q = Uri.encodeQueryComponent(query.trim());
+    final list = await _client.getJsonList(
+      '/api/v1/scans/match?q=$q&limit=$limit',
+    );
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(FoodCandidate.fromJson)
+        .toList();
+  }
+
+  Future<FoodItem> confirmScan({
+    required String scanId,
+    required String foodName,
+    double? confidence,
+  }) async {
+    final body = await _client.postJson(
+      '/api/v1/scans/$scanId/confirm',
+      body: {
+        'foodName': foodName,
+        if (confidence != null) 'confidence': confidence,
+      },
+    );
     final food = body['food'] as Map<String, dynamic>? ?? {};
     final awarenessJson = food['awareness'] as Map<String, dynamic>?;
     return FoodItem(
-      name: food['name']?.toString() ?? 'Unknown food',
-      confidence: (food['confidence'] as num?)?.toDouble() ?? 0,
-      scanId: body['scanId']?.toString(),
+      name: food['name']?.toString() ?? foodName,
+      confidence: (food['confidence'] as num?)?.toDouble() ?? confidence ?? 0,
+      scanId: body['scanId']?.toString() ?? scanId,
       awareness: awarenessJson == null
           ? null
           : IngredientAwareness.fromJson(awarenessJson),

@@ -10,16 +10,18 @@ import '../screens/packaged/packaged_result_screen.dart';
 import '../screens/portion/portion_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/result/food_result_screen.dart';
+import '../screens/scan/food_match_screen.dart';
 import '../screens/scan/scan_screen.dart';
 import '../screens/scan/scanning_screen.dart';
 import '../screens/search/food_compare_screen.dart';
 import '../screens/search/food_search_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../models/comparable_food.dart';
 import '../models/food_item.dart';
-import '../models/food_search_item.dart';
 import '../models/nutrition_info.dart';
 import '../models/packaged_food_analysis.dart';
 import '../models/scan_image_args.dart';
+import '../models/scan_result.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -37,6 +39,7 @@ class AppRoutes {
   static const String packagedResult = '/packaged-result';
   static const String foodSearch = '/food-search';
   static const String foodCompare = '/food-compare';
+  static const String foodMatch = '/food-match';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -65,7 +68,11 @@ class AppRoutes {
       case profile:
         return _fade(const ProfileScreen(), settings);
       case packagedBarcode:
-        return _slide(const PackagedBarcodeScreen(), settings);
+        final compareWith = settings.arguments as PackagedFoodAnalysis?;
+        return _slide(
+          PackagedBarcodeScreen(compareWith: compareWith),
+          settings,
+        );
       case packagedLabel:
         final barcodeHint = settings.arguments as String?;
         return _slide(
@@ -81,8 +88,11 @@ class AppRoutes {
           FoodSearchScreen(initialQuery: initialQuery),
           settings,
         );
+      case foodMatch:
+        final args = settings.arguments as FoodMatchArgs;
+        return _slide(FoodMatchScreen(args: args), settings);
       case foodCompare:
-        final args = settings.arguments as ({FoodSearchItem a, FoodSearchItem b});
+        final args = settings.arguments as ({ComparableFood a, ComparableFood b});
         return _slide(
           FoodCompareScreen(left: args.a, right: args.b),
           settings,

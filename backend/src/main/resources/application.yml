@@ -30,6 +30,7 @@ management:
       show-details: when_authorized
 
 foodscan:
+  food-identifier: ${FOOD_IDENTIFIER:catalog}
   ai:
     base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
     connect-timeout-ms: ${AI_CONNECT_TIMEOUT_MS:5000}

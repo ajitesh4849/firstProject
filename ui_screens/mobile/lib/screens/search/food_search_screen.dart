@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../models/comparable_food.dart';
 import '../../models/food_search_item.dart';
 import '../../routes/app_routes.dart';
 import '../../services/api_exception.dart';
@@ -125,7 +126,10 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     Navigator.pushNamed(
       context,
       AppRoutes.foodCompare,
-      arguments: (a: a, b: item),
+      arguments: (
+        a: ComparableFood.fromSearchItem(a),
+        b: ComparableFood.fromSearchItem(item),
+      ),
     );
   }
 

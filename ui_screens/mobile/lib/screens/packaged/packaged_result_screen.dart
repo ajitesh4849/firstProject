@@ -779,6 +779,31 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
                       onPressed: _adding || _added ? null : _addToToday,
                     ),
                     const SizedBox(height: 10),
+                    SecondaryButton(
+                      label: 'Compare with another package',
+                      icon: Icons.compare_arrows_rounded,
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.packagedBarcode,
+                          arguments: _analysis,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ] else ...[
+                    SecondaryButton(
+                      label: 'Compare with another package',
+                      icon: Icons.compare_arrows_rounded,
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.packagedBarcode,
+                          arguments: _analysis,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
                   ],
                   if (_analysis.canSaveToCatalog) ...[
                     SecondaryButton(

@@ -2,7 +2,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../models/food_item.dart';
+import '../../models/ingredient_awareness.dart';
 import '../../models/scan_image_args.dart';
+import '../../models/scan_result.dart';
 import '../../routes/app_routes.dart';
 import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
@@ -53,23 +56,49 @@ class _ScanningScreenState extends State<ScanningScreen> {
     try {
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (!mounted) return;
-      setState(() => _status = 'Identifying food…');
+      setState(() => _status = 'Saving scan…');
 
       final bytes = args?.bytes.isNotEmpty == true
           ? args!.bytes
           : PlaceholderImage.jpegBytes;
       final filename = args?.filename ?? 'meal.jpg';
 
-      final food = await foodApi.createScan(
+      final scan = await foodApi.createScan(
         imageBytes: bytes,
         filename: filename,
       );
       if (!mounted) return;
 
-      setState(() => _status = 'Finalizing…');
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      setState(() => _status = 'Opening matches…');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       if (!mounted) return;
 
+      final imageBytes = Uint8List.fromList(bytes);
+
+      if (scan.needsUserPick || scan.food == null) {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.foodMatch,
+          arguments: FoodMatchArgs(
+            scanId: scan.scanId,
+            imageBytes: imageBytes,
+            filename: filename,
+            initialCandidates: scan.candidates,
+            identifierMode: scan.identifierMode,
+          ),
+        );
+        return;
+      }
+
+      final awarenessJson = scan.food!.awareness;
+      final food = FoodItem(
+        name: scan.food!.name,
+        confidence: scan.food!.confidence,
+        scanId: scan.scanId,
+        awareness: awarenessJson == null
+            ? null
+            : IngredientAwareness.fromJson(awarenessJson),
+      );
       Navigator.pushReplacementNamed(
         context,
         AppRoutes.foodResult,
@@ -112,7 +141,7 @@ class _ScanningScreenState extends State<ScanningScreen> {
           padding: AppSpacing.page,
           child: _phase == _ScanPhase.error
               ? ErrorState(
-                  title: 'Couldn’t detect food',
+                  title: 'Couldn’t start scan',
                   message: _errorMessage,
                   onRetry: _runScan,
                   onSecondary: () => Navigator.pop(context),
@@ -120,42 +149,30 @@ class _ScanningScreenState extends State<ScanningScreen> {
                 )
               : Column(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadii.xl),
-                      child: SizedBox(
-                        height: 280,
-                        width: double.infinity,
-                        child: preview == null || preview.isEmpty
-                            ? Container(
-                                color: AppColors.surfaceMuted,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.image_search_rounded,
-                                  size: 56,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : Image.memory(
-                                Uint8List.fromList(preview),
-                                fit: BoxFit.cover,
-                              ),
+                    if (preview != null && preview.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.memory(
+                            Uint8List.fromList(preview),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                    ),
                     const Spacer(),
-                    const SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: CircularProgressIndicator(strokeWidth: 3.5),
-                    ),
-                    const SizedBox(height: 20),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 18),
                     Text(
                       _status,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'This usually takes a few seconds',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      'Photo stays on this device for now. You’ll name the dish next.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const Spacer(),
                   ],
