@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface FoodScanRepository extends JpaRepository<FoodScan, String> {
     Optional<FoodScan> findByIdAndUserId(String id, UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

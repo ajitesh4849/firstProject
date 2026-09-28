@@ -330,6 +330,11 @@ class FoodApiService {
     );
   }
 
+  Future<void> deleteAccount() async {
+    await _client.deleteJson('/api/v1/me/account');
+    await _client.clearSession();
+  }
+
   FitnessGoal _goalFromApi(String? value) {
     switch (value) {
       case 'MAINTAIN':

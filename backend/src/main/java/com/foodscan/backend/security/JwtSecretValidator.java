@@ -17,7 +17,7 @@ public class JwtSecretValidator {
 
     public JwtSecretValidator(
             @Value("${foodscan.jwt.secret}") String secret,
-            @Value("${foodscan.jwt.allow-weak-secret:true}") boolean allowWeakSecret
+            @Value("${foodscan.jwt.allow-weak-secret:false}") boolean allowWeakSecret
     ) {
         this.secret = secret;
         this.allowWeakSecret = allowWeakSecret;

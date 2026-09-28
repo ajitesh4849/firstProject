@@ -14,7 +14,9 @@ import com.foodscan.backend.exception.NotFoundException;
 import com.foodscan.backend.nutrition.DailyCalorieGoalCalculator;
 import com.foodscan.backend.nutrition.DailyMacroGoals;
 import com.foodscan.backend.nutrition.DailyTipBuilder;
+import com.foodscan.backend.repository.FoodScanRepository;
 import com.foodscan.backend.repository.MealEntryRepository;
+import com.foodscan.backend.repository.PackagedProductSeedRepository;
 import com.foodscan.backend.repository.UserAccountRepository;
 import com.foodscan.backend.security.CurrentUserService;
 import org.springframework.stereotype.Service;
@@ -55,17 +57,23 @@ public class MeService {
     private final CurrentUserService currentUserService;
     private final UserAccountRepository userAccountRepository;
     private final MealEntryRepository mealEntryRepository;
+    private final FoodScanRepository foodScanRepository;
+    private final PackagedProductSeedRepository packagedProductSeedRepository;
     private final DailyCalorieGoalCalculator dailyCalorieGoalCalculator;
 
     public MeService(
             CurrentUserService currentUserService,
             UserAccountRepository userAccountRepository,
             MealEntryRepository mealEntryRepository,
+            FoodScanRepository foodScanRepository,
+            PackagedProductSeedRepository packagedProductSeedRepository,
             DailyCalorieGoalCalculator dailyCalorieGoalCalculator
     ) {
         this.currentUserService = currentUserService;
         this.userAccountRepository = userAccountRepository;
         this.mealEntryRepository = mealEntryRepository;
+        this.foodScanRepository = foodScanRepository;
+        this.packagedProductSeedRepository = packagedProductSeedRepository;
         this.dailyCalorieGoalCalculator = dailyCalorieGoalCalculator;
     }
 
@@ -239,6 +247,16 @@ public class MeService {
                 diet,
                 allergens
         );
+    }
+
+    @Transactional
+    public void deleteAccount() {
+        UserAccount user = requireUser();
+        UUID userId = user.getId();
+        mealEntryRepository.deleteByUserId(userId);
+        foodScanRepository.deleteByUserId(userId);
+        packagedProductSeedRepository.deleteByCreatedByUserId(userId);
+        userAccountRepository.delete(user);
     }
 
     private UserAccount requireUser() {

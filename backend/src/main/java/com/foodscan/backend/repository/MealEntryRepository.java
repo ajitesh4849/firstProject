@@ -15,4 +15,6 @@ public interface MealEntryRepository extends JpaRepository<MealEntry, UUID> {
             LocalDate start,
             LocalDate end
     );
+
+    void deleteByUserId(UUID userId);
 }

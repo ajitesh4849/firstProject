@@ -45,7 +45,7 @@ foodscan:
   jwt:
     secret: ${JWT_SECRET:foodscan-dev-secret-change-me-please-32chars-min}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
-    allow-weak-secret: ${JWT_ALLOW_WEAK_SECRET:true}
+    allow-weak-secret: ${JWT_ALLOW_WEAK_SECRET:false}
   rate-limit:
     auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:20}
     scan-per-minute: ${RATE_LIMIT_SCAN_PER_MINUTE:30}

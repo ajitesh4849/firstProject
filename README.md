@@ -61,6 +61,8 @@ Create an account from the login screen (signup), then scan with Camera or Galle
 
 Android emulator API base URL is `http://10.0.2.2:8080`.
 
+Production / store builds: see `docs/PRODUCTION.md` (HTTPS, JWT, backups, `API_BASE_URL` + `LEGAL_BASE_URL` dart-defines).
+
 ## Local run without Docker
 
 1. Start Postgres (or use Compose only for Postgres: `docker compose up postgres -d`).

@@ -170,7 +170,7 @@ class _ScanningScreenState extends State<ScanningScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Photo stays on this device for now. You’ll name the dish next.',
+                      'Photo stays on this device for this step. Next you’ll name the dish from our catalog (no vision AI yet).',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

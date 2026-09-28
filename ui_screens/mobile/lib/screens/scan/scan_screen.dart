@@ -117,15 +117,15 @@ class _ScanScreenState extends State<ScanScreen> {
               else ...[
                 Text(
                   hasPreview
-                      ? 'Looking good — analyze when ready'
+                      ? 'Looking good — continue when ready'
                       : 'Add a meal photo',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   hasPreview
-                      ? 'Retake or pick another image anytime.'
-                      : 'Use the camera or gallery. Clear light works best.',
+                      ? 'Next you’ll type the dish name. We match your food catalog — not vision AI yet.'
+                      : 'Photo helps you remember the meal. You’ll name the dish from our catalog next (no automatic AI identification yet).',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),

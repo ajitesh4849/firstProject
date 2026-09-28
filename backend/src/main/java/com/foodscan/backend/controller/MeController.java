@@ -9,6 +9,7 @@ import com.foodscan.backend.dto.UpdateProfileRequest;
 import com.foodscan.backend.service.MeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -49,5 +50,11 @@ public class MeController {
     @PutMapping("/me/profile")
     public ResponseEntity<ProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(meService.updateProfile(request));
+    }
+
+    @DeleteMapping("/me/account")
+    public ResponseEntity<Void> deleteAccount() {
+        meService.deleteAccount();
+        return ResponseEntity.noContent().build();
     }
 }

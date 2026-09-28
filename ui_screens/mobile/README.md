@@ -16,11 +16,16 @@ flutter run
 
 Android emulator API base URL defaults to `http://10.0.2.2:8080`.
 
-Override:
+Override (required for physical devices / production):
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://YOUR_IP:8080
+flutter run --dart-define=API_BASE_URL=http://YOUR_IP:8080 --dart-define=LEGAL_BASE_URL=http://YOUR_IP:3000
+
+# Store / cloud builds
+flutter build apk --dart-define=API_BASE_URL=https://api.yourdomain.com --dart-define=LEGAL_BASE_URL=https://yourdomain.com
 ```
+
+See `docs/PRODUCTION.md` for HTTPS, JWT, backups, and store copy.
 
 ## UI system
 

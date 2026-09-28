@@ -5,6 +5,7 @@ import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
+import '../../utils/legal_links.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/primary_button.dart';
 
@@ -228,6 +229,30 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.primaryDark,
                           ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'By continuing you agree to our Terms and acknowledge the Privacy Policy. Estimates are not medical advice.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    children: [
+                      TextButton(
+                        onPressed:
+                            _isLoading ? null : () => openTermsOfUse(context),
+                        child: const Text('Terms'),
+                      ),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => openPrivacyPolicy(context),
+                        child: const Text('Privacy'),
+                      ),
+                    ],
                   ),
                 ],
               ),

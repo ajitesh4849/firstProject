@@ -165,7 +165,7 @@ class _FoodMatchScreenState extends State<FoodMatchScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Type the dish name. Matches use your food catalog — not AI vision yet.',
+                    'Type what you ate. We rank real catalog matches with a match score. Vision AI identification is not used yet.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 10),

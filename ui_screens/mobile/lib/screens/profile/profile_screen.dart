@@ -8,6 +8,7 @@ import '../../services/api_exception.dart';
 import '../../services/food_api_service.dart';
 import '../../services/mock_data.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/legal_links.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/main_bottom_nav.dart';
 import '../../widgets/primary_button.dart';
@@ -451,6 +452,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               icon: Icons.logout_rounded,
                               onPressed: _isSaving ? null : _logout,
                             ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: _isSaving
+                                  ? null
+                                  : () => openPrivacyPolicy(context),
+                              child: const Text('Privacy policy'),
+                            ),
+                            TextButton(
+                              onPressed:
+                                  _isSaving ? null : () => openTermsOfUse(context),
+                              child: const Text('Terms of use'),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: _isSaving ? null : _deleteAccount,
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.danger,
+                              ),
+                              child: const Text('Delete account'),
+                            ),
                           ],
                         ),
                       ),
@@ -458,6 +479,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
       ),
     );
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete account'),
+        content: const Text(
+          'This permanently deletes your profile, meals, and scans. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _isSaving = true);
+    try {
+      await foodApi.deleteAccount();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not delete account')),
+      );
+    }
   }
 
   Future<void> _logout() async {

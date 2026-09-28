@@ -150,6 +150,18 @@ class ApiClient {
     });
   }
 
+  Future<void> deleteJson(String path) {
+    return _withNetworkRetry(() async {
+      final response = await _http
+          .delete(_uri(path), headers: _headers(json: false))
+          .timeout(ApiConfig.timeout);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      }
+      await _decode(response);
+    });
+  }
+
   Future<Map<String, dynamic>> postMultipart({
     required String path,
     required String fieldName,

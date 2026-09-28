@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface PackagedProductSeedRepository extends JpaRepository<PackagedProductSeed, UUID> {
     Optional<PackagedProductSeed> findByBarcode(String barcode);
+
+    void deleteByCreatedByUserId(UUID createdByUserId);
 }
