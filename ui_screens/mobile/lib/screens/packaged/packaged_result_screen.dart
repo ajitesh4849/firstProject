@@ -19,14 +19,9 @@ class PackagedResultScreen extends StatefulWidget {
 }
 
 class _PackagedResultScreenState extends State<PackagedResultScreen> {
-  static const List<({String label, int grams})> _servings = [
-    (label: '30g', grams: 30),
-    (label: '50g', grams: 50),
-    (label: '100g', grams: 100),
-  ];
-
   late PackagedFoodAnalysis _analysis;
   late final TextEditingController _brandController;
+  late List<({String label, int grams})> _servings;
   bool _saving = false;
   bool _adding = false;
   bool _added = false;
@@ -38,6 +33,47 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
     super.initState();
     _analysis = widget.analysis;
     _brandController = TextEditingController(text: _analysis.brand?.trim() ?? '');
+    _servings = _buildServings(_analysis.quantity);
+    final packGrams = _parseQuantityGrams(_analysis.quantity);
+    if (packGrams != null && packGrams >= 10 && packGrams <= 500) {
+      _servingGrams = packGrams;
+    }
+  }
+
+  /// Prefer pack net weight when known; else common snack sizes.
+  static List<({String label, int grams})> _buildServings(String? quantity) {
+    final pack = _parseQuantityGrams(quantity);
+    final base = <({String label, int grams})>[
+      (label: 'Small · 30g', grams: 30),
+      (label: 'Handful · 50g', grams: 50),
+      (label: '100g', grams: 100),
+    ];
+    if (pack != null && pack >= 10 && pack <= 500) {
+      final exists = base.any((s) => s.grams == pack);
+      if (!exists) {
+        return [
+          (label: 'Pack · ${pack}g', grams: pack),
+          ...base,
+        ];
+      }
+    }
+    return base;
+  }
+
+  static int? _parseQuantityGrams(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final text = raw.trim().toLowerCase();
+    final match = RegExp(r'(\d+(?:\.\d+)?)\s*(g|gram|grams)\b')
+        .firstMatch(text);
+    if (match != null) {
+      return double.tryParse(match.group(1)!)?.round();
+    }
+    final ml = RegExp(r'(\d+(?:\.\d+)?)\s*ml\b').firstMatch(text);
+    if (ml != null) {
+      // Approximate 1 ml ≈ 1 g for drinks when logging.
+      return double.tryParse(ml.group(1)!)?.round();
+    }
+    return null;
   }
 
   @override
@@ -185,6 +221,11 @@ class _PackagedResultScreenState extends State<PackagedResultScreen> {
   String _readableIngredient(String value) {
     final text = value.trim();
     if (text.isEmpty) return text;
+    // Soften legacy placeholder wording from older catalog saves.
+    if (text.toLowerCase().contains('not listed in product database') ||
+        text.toLowerCase() == 'ingredients not available for this pack') {
+      return 'Ingredients not available for this pack';
+    }
 
     // Keep short codes like E110 as-is; soften long ALL-CAPS labels.
     final letters = text.replaceAll(RegExp(r'[^A-Za-z]'), '');

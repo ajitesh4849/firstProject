@@ -120,25 +120,54 @@ class FoodIntelligenceCard extends StatelessWidget {
           const SizedBox(height: 10),
           ...List.generate(intelligence.alternatives.length, (index) {
             final alt = intelligence.alternatives[index];
+            final searchQuery = _searchQueryForSwap(alt.name);
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _SwapTile(
                 index: index + 1,
                 name: alt.name,
                 reason: alt.reason,
-                onFind: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.foodSearch,
-                    arguments: alt.name,
-                  );
-                },
+                onFind: searchQuery == null
+                    ? null
+                    : () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.foodSearch,
+                          arguments: searchQuery,
+                        );
+                      },
               ),
             );
           }),
         ],
       ],
     );
+  }
+
+  /// Advice phrases are not catalog foods — only open Search for food-like names.
+  static String? _searchQueryForSwap(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+    final lower = trimmed.toLowerCase();
+    const blocked = [
+      'option',
+      'sibling',
+      'version when',
+      'compare per',
+      'alternative',
+      'prefer recognizable',
+      'you control',
+    ];
+    for (final token in blocked) {
+      if (lower.contains(token)) return null;
+    }
+    // Use the leading food phrase before parentheses / em-dash.
+    final cleaned = trimmed
+        .split(RegExp(r'[—(]'))
+        .first
+        .trim();
+    if (cleaned.length < 2) return null;
+    return cleaned;
   }
 }
 
@@ -147,13 +176,13 @@ class _SwapTile extends StatelessWidget {
     required this.index,
     required this.name,
     required this.reason,
-    required this.onFind,
+    this.onFind,
   });
 
   final int index;
   final String name;
   final String reason;
-  final VoidCallback onFind;
+  final VoidCallback? onFind;
 
   @override
   Widget build(BuildContext context) {
@@ -198,14 +227,15 @@ class _SwapTile extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Search this food',
-            onPressed: onFind,
-            icon: const Icon(
-              Icons.search_rounded,
-              color: AppColors.primary,
+          if (onFind != null)
+            IconButton(
+              tooltip: 'Search this food',
+              onPressed: onFind,
+              icon: const Icon(
+                Icons.search_rounded,
+                color: AppColors.primary,
+              ),
             ),
-          ),
         ],
       ),
     );

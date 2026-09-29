@@ -95,7 +95,8 @@ class _PortionScreenState extends State<PortionScreen> {
               children: [
                 SectionHeader(
                   title: widget.food.name,
-                  subtitle: 'Choose a portion size for estimation',
+                  subtitle:
+                      'Don’t know exact grams? Pick a plate size — we estimate from typical portions.',
                 ),
                 const SizedBox(height: 18),
                 Expanded(
@@ -131,14 +132,27 @@ class _PortionScreenState extends State<PortionScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    option.label,
-                                    style:
-                                        Theme.of(context).textTheme.titleMedium,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        option.label,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium,
+                                      ),
+                                      Text(
+                                        option.hint,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Text(
-                                  '${option.grams}g',
+                                  '~${option.grams}g',
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium

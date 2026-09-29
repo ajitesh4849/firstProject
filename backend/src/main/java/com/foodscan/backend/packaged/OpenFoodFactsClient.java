@@ -91,21 +91,39 @@ public class OpenFoodFactsClient {
                             ""
                     ),
                     asString(product.get("categories")),
-                    asDouble(nutriments.get("sugars_100g")),
+                    firstNonNull(
+                            asDouble(nutriments.get("sugars_100g")),
+                            asDouble(nutriments.get("sugars")),
+                            asDouble(nutriments.get("sugar_100g"))
+                    ),
                     salt,
                     firstNonNull(
                             asDouble(nutriments.get("energy-kcal_100g")),
-                            asDouble(nutriments.get("energy-kcal_value"))
+                            asDouble(nutriments.get("energy-kcal_value")),
+                            asDouble(nutriments.get("energy-kcal")),
+                            kjToKcal(asDouble(nutriments.get("energy-kj_100g"))),
+                            kjToKcal(asDouble(nutriments.get("energy_100g"))),
+                            kjToKcal(asDouble(nutriments.get("energy")))
                     ),
-                    asDouble(nutriments.get("proteins_100g")),
+                    firstNonNull(
+                            asDouble(nutriments.get("proteins_100g")),
+                            asDouble(nutriments.get("proteins")),
+                            asDouble(nutriments.get("protein_100g"))
+                    ),
                     firstNonNull(
                             asDouble(nutriments.get("carbohydrates_100g")),
-                            asDouble(nutriments.get("carbohydrates_value"))
+                            asDouble(nutriments.get("carbohydrates_value")),
+                            asDouble(nutriments.get("carbohydrates"))
                     ),
-                    asDouble(nutriments.get("fat_100g")),
+                    firstNonNull(
+                            asDouble(nutriments.get("fat_100g")),
+                            asDouble(nutriments.get("fat"))
+                    ),
                     firstNonNull(
                             asDouble(nutriments.get("fiber_100g")),
-                            asDouble(nutriments.get("fibre_100g"))
+                            asDouble(nutriments.get("fibre_100g")),
+                            asDouble(nutriments.get("fiber")),
+                            asDouble(nutriments.get("fibre"))
                     ),
                     asDouble(nutriments.get("saturated-fat_100g")),
                     sodium,
@@ -162,5 +180,17 @@ public class OpenFoodFactsClient {
             }
         }
         return null;
+    }
+
+    /** OFF often stores energy as kJ under energy_100g. */
+    private static Double kjToKcal(Double kj) {
+        if (kj == null || kj <= 0) {
+            return null;
+        }
+        // Values already in kcal are usually &lt; ~900 for packaged foods per 100g.
+        if (kj < 900) {
+            return kj;
+        }
+        return Math.round((kj / 4.184) * 10.0) / 10.0;
     }
 }

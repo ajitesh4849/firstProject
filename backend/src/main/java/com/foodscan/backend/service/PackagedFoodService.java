@@ -125,7 +125,7 @@ public class PackagedFoodService {
     }
 
     private static final String MISSING_INGREDIENTS_PLACEHOLDER =
-            "(Ingredients not listed in product database)";
+            "Ingredients not available for this pack";
 
     @Transactional
     public PackagedFoodResponse saveToCatalog(SavePackagedSeedRequest request) {

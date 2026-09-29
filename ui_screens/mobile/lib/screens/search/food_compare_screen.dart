@@ -128,6 +128,8 @@ class FoodCompareScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sparse = !left.hasAnyNutrition || !right.hasAnyNutrition;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Compare')),
       body: SafeArea(
@@ -140,6 +142,28 @@ class FoodCompareScreen extends StatelessWidget {
                 'Per 100g',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              if (sparse) ...[
+                const SizedBox(height: 10),
+                AppCard(
+                  elevated: false,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Limited nutrition data from the product database for one or both packs. Scores may still show; macros appear when the label/catalog includes them.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               AppCard(
                 child: Column(
@@ -214,7 +238,9 @@ class FoodCompareScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Green marks the better side when both values exist. Missing values show as —. Educational only.',
+                sparse
+                    ? 'Dashes mean the database had no per-100g value. Try a FoodScan seed barcode (89010000000xx) or a pack with a full label.'
+                    : 'Green marks the better side when both values exist. Missing values show as —. Educational only.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const Spacer(),

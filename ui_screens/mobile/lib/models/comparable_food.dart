@@ -29,6 +29,15 @@ class ComparableFood {
   final double? saltPer100g;
   final String? scoreLabel;
 
+  bool get hasAnyNutrition =>
+      caloriesPer100g != null ||
+      proteinPer100g != null ||
+      carbsPer100g != null ||
+      fatPer100g != null ||
+      fibrePer100g != null ||
+      sugarPer100g != null ||
+      saltPer100g != null;
+
   factory ComparableFood.fromSearchItem(FoodSearchItem item) {
     return ComparableFood(
       id: 'food:${item.name}',

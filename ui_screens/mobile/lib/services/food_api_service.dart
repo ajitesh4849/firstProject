@@ -171,7 +171,7 @@ class FoodApiService {
         'quantity': analysis.quantity,
         'ingredientsText': (ingredients != null && ingredients.isNotEmpty)
             ? ingredients
-            : '(Ingredients not listed in product database)',
+            : 'Ingredients not available for this pack',
         'sugarPer100g': analysis.sugarPer100g,
         'saltPer100g': analysis.saltPer100g,
         'energyKcalPer100g': analysis.energyKcalPer100g,

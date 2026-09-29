@@ -474,9 +474,10 @@ public class FoodIntelligenceService {
             list.add(new AlternativeDto("Low-fat curd / Greek-style dahi", "Protein with less saturated fat per spoon."));
             list.add(new AlternativeDto("Paneer (homemade or fresh)", "Higher protein if you need dairy satiety."));
         } else {
-            list.add(new AlternativeDto("Short-ingredient whole-food option", "Prefer recognizable ingredients near the top of the list."));
-            list.add(new AlternativeDto("Lower sugar / salt sibling product", "Compare per 100g values side by side."));
-            list.add(new AlternativeDto("Homemade version when practical", "You control oil, salt, and additives."));
+            // Use catalog-searchable names (not advice phrases) so Search can find them.
+            list.add(new AlternativeDto("Roasted chana", "Shorter ingredient list and more protein than many packaged snacks."));
+            list.add(new AlternativeDto("Curd", "Simple whole-food option — compare sugar and salt on labels when shopping."));
+            list.add(new AlternativeDto("Fruit", "Natural sweetness with fibre; portion is easier to control than many sweets."));
         }
 
         boolean hasColor = flags != null && flags.stream()

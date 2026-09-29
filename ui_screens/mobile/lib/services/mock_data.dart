@@ -13,10 +13,11 @@ class MockDataService {
     confidence: 0.92,
   );
 
-  static const List<({String label, int grams})> portionOptions = [
-    (label: 'Small', grams: 100),
-    (label: 'Medium', grams: 200),
-    (label: 'Large', grams: 300),
+  /// Visual plate sizes — users often don't know exact grams.
+  static const List<({String label, String hint, int grams})> portionOptions = [
+    (label: 'Small plate', hint: 'Side / light meal', grams: 100),
+    (label: 'Medium plate', hint: 'Typical serving (default)', grams: 200),
+    (label: 'Large plate', hint: 'Full / heavy plate', grams: 300),
   ];
 
   static const double _kcalPer100g = 190;
