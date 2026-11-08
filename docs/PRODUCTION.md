@@ -43,6 +43,8 @@ Prefer managed Postgres (RDS, Cloud SQL, Neon, Supabase) with automated backups 
 
 ## 4. Flutter production build
 
+Privacy / Terms open the **marketing website** (Compose `website` service), not the API.
+
 ```powershell
 cd ui_screens/mobile
 flutter pub get
@@ -51,7 +53,10 @@ flutter build apk --dart-define=API_BASE_URL=https://api.yourdomain.com --dart-d
 flutter build ios --dart-define=API_BASE_URL=https://api.yourdomain.com --dart-define=LEGAL_BASE_URL=https://yourdomain.com
 ```
 
-Do **not** ship the emulator default (`10.0.2.2` / localhost).
+Local / emulator: keep the website up (`docker compose up website` → port **3000**).  
+Legal URL follows the API host on port 3000 automatically (e.g. `10.0.2.2:3000`).
+
+Do **not** ship the emulator default (`10.0.2.2` / localhost) for store builds.
 
 ## 5. Store listing copy (meal scan)
 
